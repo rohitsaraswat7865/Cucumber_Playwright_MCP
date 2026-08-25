@@ -1,0 +1,4 @@
+{  
+  "playwrightBddRunner.testFilePattern": "features/**/*.feature",
+  "playwrightBddRunner.stepDefinitionPaths": ["steps/**/*.js"]
+}

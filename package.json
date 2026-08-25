@@ -1,0 +1,23 @@
+{
+  "name": "test01",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "bddgen": "bddgen",
+    "clean": "node -e \"require('fs').rmSync('.features-gen',{recursive:true,force:true})\"",    
+    "test:parallel:headed": "npm run clean && bddgen && playwright test --workers=2 --headed",
+    "test:parallel:headless": "npm run clean && bddgen && playwright test --workers=2",
+    "test:debug": "npm run clean && bddgen && playwright test --debug",
+    "report": "playwright show-report"
+    },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^26.2.0",
+    "playwright-bdd": "^9.2.0"
+  }
+}
