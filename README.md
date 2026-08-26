@@ -1,4 +1,4 @@
-# 🎭 test01 — Playwright BDD Test Suite
+# 🎭 Playwright BDD Test Suite
 
 > End-to-end browser tests written in plain-English Gherkin, powered by [Playwright](https://playwright.dev/) and [playwright-bdd](https://github.com/vitalets/playwright-bdd).
 
