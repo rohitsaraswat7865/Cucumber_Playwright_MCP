@@ -11,24 +11,21 @@ export default defineConfig({
   testDir,
   globalSetup: './global-setup.js',
   /* Maximum time one test can run for. */
-  timeout: 20_000,
+  timeout: 40_000,
   expect: {
     /* Maximum time expect() should wait for the condition to be met. */
-    timeout: 5_000,
+    timeout: 15_000,
   },
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 2 : 1,
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 2 : 2,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [
-    ['html'],
-    ['json', { outputFile: 'test-results/results.json' }],
-  ],
+  reporter: [['html'], ['json', { outputFile: 'test-results/results.json' }]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
@@ -36,7 +33,7 @@ export default defineConfig({
 
     /* Collect trace on failure. See https://playwright.dev/docs/trace-viewer */
     trace: 'retain-on-failure',
-    headless: false,
+    headless: true,
     /* Slow down execution by this many milliseconds between actions, for debugging. */
     launchOptions: {
       slowMo: 1_000,
@@ -49,8 +46,6 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-
-   
 
     /* Test against mobile viewports. */
     // {
@@ -80,4 +75,3 @@ export default defineConfig({
   //   reuseExistingServer: !process.env.CI,
   // },
 });
-

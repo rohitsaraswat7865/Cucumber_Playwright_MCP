@@ -1,4 +1,6 @@
-{  
+{
   "playwrightBddRunner.testFilePattern": "features/**/*.feature",
-  "playwrightBddRunner.stepDefinitionPaths": ["steps/**/*.js"]
+  "playwrightBddRunner.stepDefinitionPaths": ["steps/**/*.js"],
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true
 }

@@ -83,7 +83,7 @@ export function validateSessionState(state) {
 }
 
 function formatErrors(errors) {
-  return errors.map((e) => `  - ${e}`).join('\n');
+  return errors.map(e => `  - ${e}`).join('\n');
 }
 
 /**
@@ -97,7 +97,7 @@ function formatErrors(errors) {
  * by actually navigating and checking for signed-in UI (see CLAUDE.md §4).
  */
 export function findExpiredCookies(cookies, now = Date.now() / 1000) {
-  return cookies.filter((c) => typeof c.expires === 'number' && c.expires !== -1 && c.expires < now);
+  return cookies.filter(c => typeof c.expires === 'number' && c.expires !== -1 && c.expires < now);
 }
 
 /**
@@ -109,7 +109,7 @@ export function readSessionState() {
   if (!fs.existsSync(SESSION_FILE)) {
     throw new Error(
       `Session state file not found: ${SESSION_FILE}\n` +
-        'Run global setup once to create it before running scenarios that inject session state.',
+        'Run `npm run test:debug` to log in and create it before running scenarios that inject session state.',
     );
   }
 
@@ -125,7 +125,7 @@ export function readSessionState() {
     throw new Error(
       `Session state file is not in Playwright's native storageState format: ${SESSION_FILE}\n` +
         `${formatErrors(errors)}\n` +
-        'Delete the file and re-run global setup to regenerate it. Never hand-edit it: the ' +
+        'Re-login by running `npm run test:debug` to regenerate it. Never hand-edit it: the ' +
         'Playwright MCP server reads the same file via --storage-state and silently ignores ' +
         'any non-native shape, which produces a logged-out browser with no error.',
     );
@@ -135,8 +135,8 @@ export function readSessionState() {
   if (expired.length > 0) {
     throw new Error(
       `Session state file has expired cookies: ${SESSION_FILE}\n` +
-        `${formatErrors(expired.map((c) => `\`${c.name}\` expired at ${new Date(c.expires * 1000).toISOString()}`))}\n` +
-        'Delete the file and re-run global setup to regenerate it.',
+        `${formatErrors(expired.map(c => `\`${c.name}\` expired at ${new Date(c.expires * 1000).toISOString()}`))}\n` +
+        'Session expired - re-login by running `npm run test:debug`, which wipes .auth/ and logs in fresh.',
     );
   }
 
@@ -180,7 +180,7 @@ export async function writeSessionState(context, sessionStorage = {}) {
 /** `origins[]` flattened to { "https://host": { key: value } } for injection. */
 export function localStorageByOrigin(origins) {
   return Object.fromEntries(
-    origins.map((entry) => [
+    origins.map(entry => [
       entry.origin,
       Object.fromEntries((entry.localStorage ?? []).map(({ name, value }) => [name, value])),
     ]),

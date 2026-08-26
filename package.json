@@ -5,12 +5,14 @@
   "main": "index.js",
   "scripts": {
     "bddgen": "bddgen",
-    "clean": "node -e \"require('fs').rmSync('.features-gen',{recursive:true,force:true})\"",    
-    "test:parallel:headed": "npm run clean && bddgen && playwright test --workers=2 --headed",
-    "test:parallel:headless": "npm run clean && bddgen && playwright test --workers=2",
+    "clean": "node -e \"require('fs').rmSync('.features-gen',{recursive:true,force:true})\"",
+    "test:parallel:headed": "npm run clean && bddgen && playwright test --workers=3 --headed",
+    "test:parallel:headless": "npm run clean && bddgen && playwright test --workers=3",
     "test:debug": "npm run clean && bddgen && playwright test --debug",
-    "report": "playwright show-report"
-    },
+    "report": "playwright show-report",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -18,6 +20,8 @@
   "devDependencies": {
     "@playwright/test": "^1.62.1",
     "@types/node": "^26.2.0",
-    "playwright-bdd": "^9.2.0"
+    "playwright-bdd": "^9.2.0",
+    "prettier": "^3.9.6",
+    "prettier-plugin-gherkin": "^4.0.0"
   }
 }

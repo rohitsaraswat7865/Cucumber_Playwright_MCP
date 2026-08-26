@@ -91,3 +91,5 @@ Listed in [.vscode/extensions.json](.vscode/extensions.json) — installed autom
 
 - 🥒 **Specwright — BDD Authoring for Playwright** (`upscaled-dev.specwright`) — Gherkin syntax highlighting, step navigation/autocomplete, and a test runner for `playwright-bdd`, pointed at [features/](features/) and [steps/](steps/) via `playwrightBddRunner.testFilePattern` / `playwrightBddRunner.stepDefinitionPaths` in [.vscode/settings.json](.vscode/settings.json)
 - 🤖 **Claude Code** (`anthropic.claude-code`) — AI pair-programming inside VS Code
+
+![alt text](workflow-controlflow.png)
