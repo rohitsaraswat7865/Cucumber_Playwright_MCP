@@ -12,6 +12,8 @@
 - 🔁 **Parallel execution** — fully parallel test files with configurable worker count
 - 🤖 **AI-assisted authoring** — [Playwright MCP server](.mcp.json) wired up so Claude Code can drive a real browser to generate/debug steps. It's pre-authenticated from the same capture the tests use — `--storage-state` for cookies, `--init-script` for web storage — so it sees the app exactly as a real scenario does. Requires both `.auth/` artifacts to exist already (run `npm run test:parallel:headless` once if they don't)
 - 🧩 **Editor integration** — [.vscode/extensions.json](.vscode/extensions.json) recommends Specwright and Claude Code, pre-wired via [.vscode/settings.json](.vscode/settings.json) to this repo's `features/` and `steps/` folders
+## Control flow dig.
+![alt text](workflow-controlflow.png)
 
 ## 📁 Project structure
 
@@ -92,4 +94,3 @@ Listed in [.vscode/extensions.json](.vscode/extensions.json) — installed autom
 - 🥒 **Specwright — BDD Authoring for Playwright** (`upscaled-dev.specwright`) — Gherkin syntax highlighting, step navigation/autocomplete, and a test runner for `playwright-bdd`, pointed at [features/](features/) and [steps/](steps/) via `playwrightBddRunner.testFilePattern` / `playwrightBddRunner.stepDefinitionPaths` in [.vscode/settings.json](.vscode/settings.json)
 - 🤖 **Claude Code** (`anthropic.claude-code`) — AI pair-programming inside VS Code
 
-![alt text](workflow-controlflow.png)
