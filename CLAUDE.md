@@ -6,13 +6,14 @@
 
 ## 0. Non-negotiables
 
-| #      | Rule                                                                                                            | Full text |
-| ------ | --------------------------------------------------------------------------------------------------------------- | --------- |
-| **N1** | Never run the test suite, `bddgen`, or global setup. Hand off instead.                                          | §2        |
-| **N2** | Never call `mcp__playwright__browser_*` until both `.auth/` artifacts pass the validity **and freshness** gate. | §3        |
-| **N3** | Never write a locator, role, accessible name, URL, or title you haven't confirmed against the live page.        | §4        |
-| **N4** | Never hand-edit a generated file (`.auth/*`, `.features-gen/`, report dirs).                                    | §1        |
-| **N5** | Never call a step passing/working/done without a real run result.                                               | §2, §4    |
+| #      | Rule                                                                                                              | Full text |
+| ------ | ----------------------------------------------------------------------------------------------------------------- | --------- |
+| **N1** | Never run the test suite, `bddgen`, or global setup. Hand off instead.                                            | §2        |
+| **N2** | Never call `mcp__playwright__browser_*` until both `.auth/` artifacts pass the validity **and freshness** gate.   | §3        |
+| **N3** | Never write a locator, role, accessible name, URL, or title you haven't confirmed against the live page.          | §4        |
+| **N4** | Never hand-edit a generated file (`.auth/*`, `.features-gen/`, report dirs).                                      | §1        |
+| **N5** | Never call a step passing/working/done without a real run result.                                                 | §2, §4    |
+| **N6** | Never edit an existing step definition in any file under [steps/](steps/). Only add new steps for what's missing. | §4        |
 
 ---
 
@@ -23,7 +24,7 @@ Playwright + Gherkin. ESM (`"type": "module"`), Chromium only, headed by default
 | Path                                                                                 | Role                                                   | Editable     |
 | ------------------------------------------------------------------------------------ | ------------------------------------------------------ | ------------ |
 | [features/](features/) `**/*.feature`                                                | Gherkin scenarios                                      | ✅           |
-| [steps/test.steps.js](steps/test.steps.js)                                           | Step definitions via `createBdd()`                     | ✅           |
+| [steps/](steps/) `**/*.js`                                                           | Step definitions via `createBdd()`                     | ✅           |
 | [playwright.config.js](playwright.config.js)                                         | `defineBddConfig({ features, steps })` + runner config | ✅           |
 | [global-setup.js](global-setup.js)                                                   | One-time login → writes both `.auth/` artifacts (§5)   | ✅           |
 | [session-state.js](session-state.js)                                                 | Format contract for session file (read/write/validate) | ✅           |
@@ -32,6 +33,8 @@ Playwright + Gherkin. ESM (`"type": "module"`), Chromium only, headed by default
 | `.features-gen/` `test-results/` `playwright-report/` `blob-report/` `node_modules/` | Build/report output                                    | ❌ generated |
 
 N4: `.features-gen/` regenerates on every `bddgen` run, so hand-edits there are silently discarded.
+
+Step definitions are spread across **every** `.js` file under [steps/](steps/) — [playwright.config.js](playwright.config.js) globs `steps/**/*.js`, so all of them load. Never assume a single file holds them all (today it happens to be [steps/test.steps.js](steps/test.steps.js); tomorrow it won't be). Search the whole folder before concluding a step is missing.
 
 ---
 
@@ -64,9 +67,13 @@ Re-run all three checks at the start of every browsing session and again if >1 h
 
 ---
 
-## 4. Workflow — writing/changing a step definition
+## 4. Workflow — writing a step definition
 
 Applies to anything in [steps/](steps/).
+
+**N6 in practice:** only add new step definitions for steps that don't exist yet. Never modify, "fix", or refactor an existing step definition already in any file under [steps/](steps/) — even if it looks wrong, stale, or improvable. If an existing step seems broken, report it to the user instead of changing it.
+
+**Where steps live:** search **all** of [steps/](steps/) for the step text before writing anything — playwright-bdd loads every `steps/**/*.js`, and two files defining the same step text is a duplicate-definition error, not an override. Add a genuinely new step to the existing file that covers the same area; start a new `steps/<area>.steps.js` only for a new area, and match the `createBdd()` setup the other files use.
 
 **N3 in practice:** never write a locator/role/name/URL/title from memory, the feature file's wording, or how the page "should" look — confirm live first. A plausible-looking locator still parses and runs; it just fails (or silently matches the wrong element) the first time the real page differs, and that's invisible until the user runs the suite.
 
@@ -124,10 +131,10 @@ Both consumers go through `readSessionState()` ([session-state.js](session-state
 
 ## 6. Conventions (step definitions, same scope as §4)
 
-Match existing style in [steps/test.steps.js](steps/test.steps.js).
+Match existing style in the step files already under [steps/](steps/).
 
-- **Role-first locators**: `getByRole`/`getByLabel`/`getByText` over CSS/XPath. ✅ `page.getByRole('link', { name: 'Docs' })` ❌ `page.locator('.nav > a.docs-link')`
-- **Scope before assert**: narrow to a container first. ✅ `page.getByRole('navigation', { name: 'Docs sidebar' }).getByRole('link', { name })`
+- **XPath-only locators**: use `page.locator('xpath=...')` for all locators, not `getByRole`/`getByLabel`/`getByText`/CSS. ✅ `page.locator("xpath=//a[contains(@class,'docs-link')]")` ❌ `page.getByRole('link', { name: 'Docs' })`
+- **Scope before assert**: narrow to a container first with a scoped xpath. ✅ `page.locator("xpath=//nav[@aria-label='Docs sidebar']//a[text()='Docs']")`
 - **Parameterize with `{string}`**. ✅ `When("I click link {string}", async ({ page }, str) => …)` ❌ `When("I click the Docs link", …)`
 - **Web-first assertions only**: `toBeVisible`, `toHaveTitle`, `toHaveURL`. ❌ `waitForTimeout`/`setTimeout`/manual sleep.
 - **ESM imports**; Node builtins as `node:fs`/`node:path`.
