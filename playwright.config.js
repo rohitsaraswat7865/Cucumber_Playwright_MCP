@@ -11,10 +11,10 @@ export default defineConfig({
   testDir,
   globalSetup: './global-setup.js',
   /* Maximum time one test can run for. */
-  timeout: 40_000,
+  timeout: 90_000,
   expect: {
     /* Maximum time expect() should wait for the condition to be met. */
-    timeout: 15_000,
+    timeout: 30_000,
   },
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -31,9 +31,12 @@ export default defineConfig({
     /* Base URL to use in actions like `await page.goto('')`. */
     // baseURL: 'http://localhost:3000',
 
-    /* Collect trace on failure. See https://playwright.dev/docs/trace-viewer */
-    trace: 'retain-on-failure',
+    /* Collect trace for all test runs. See https://playwright.dev/docs/trace-viewer */
+    trace: 'on',
     headless: true,
+    navigationTimeout: 30_000,
+    /* Timeout for individual step actions, e.g. click(), fill(). */
+    actionTimeout: 30_000,
     /* Slow down execution by this many milliseconds between actions, for debugging. */
     launchOptions: {
       slowMo: 1_000,

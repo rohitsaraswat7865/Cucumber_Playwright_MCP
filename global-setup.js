@@ -1,16 +1,10 @@
-import { chromium } from '@playwright/test';
+import { expect, firefox } from '@playwright/test';
 import fs from 'node:fs';
-import {
-  SESSION_FILE,
-  writeInitScript,
-  writeSessionState,
-} from './session-state.js';
-
-export { SESSION_FILE };
+import { writeInitScript, writeSessionState } from './session-state.js';
 
 // Runs once for the whole test run, in a dedicated process before any worker
-// starts. Logs in a single time and captures session state to SESSION_FILE, so
-// scenarios can inject that state into their own browser context instead of
+// starts. Logs in a single time and captures session state to .auth/session.json,
+// so scenarios can inject that state into their own browser context instead of
 // logging in each time.
 //
 // The file is written by writeSessionState() in Playwright's native
@@ -18,28 +12,45 @@ export { SESSION_FILE };
 // appended as an extra top-level field. That exact shape is what lets the same
 // file serve both consumers unmodified - see the contract in session-state.js.
 export default async function globalSetup() {
-  // Always log in fresh - no session reuse. Wipe any leftover .auth/ artifacts
-  // from a previous run so a stale or malformed file can never be trusted.
+  // No session reuse: every run logs in fresh. Wipe .auth/ before the login
+  // below so a stale, expired, or half-written pair from a previous run can
+  // never be trusted, and so both artifacts always come from this capture.
   fs.rmSync('.auth', { recursive: true, force: true });
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await firefox.launch({
+    headless: false,
+    slowMo: 1_500,
+  });
   const context = await browser.newContext();
   const page = await context.newPage();
- 
-  await page.goto('https://www.saucedemo.com/');
-  await page.locator("xpath=//input[@id='user-name']").click();
-  await page.keyboard.type("standard_user");
-  await page.locator("xpath=//input[@id='password']").click();
-  await page.keyboard.type("secret_sauce");
-  await page.locator("xpath=//input[@name='login-button']").click({
-    delay: 1_00
-  });
-  //await page.keyboard.press("Enter");  
-  await page.waitForURL('https://www.saucedemo.com/inventory.html', {
+
+  await page.goto('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login', {
     waitUntil: 'networkidle',
-    timeout: 60_000,
+    timeout: 90_000,
+  });
+  await page.locator('css=input[name="username"]').click({
+    timeout: 90_000,
+  });
+  await page.keyboard.type('Admin');
+  await page.locator('css=input[name="password"]').click({
+    timeout: 90_000,
   });
 
+  await page.keyboard.type('admin123');
+  await expect(page.locator('//button[contains(string(),"Login")]')).toHaveAttribute(
+    'type',
+    'submit',
+  );
+
+  await page.locator('//button[contains(string(),"Login")]').click({
+    force: true,
+  });
+
+  await page.waitForURL('**/dashboard/index', {
+    timeout: 40_000,
+  });
+
+  await page.waitForLoadState('networkidle');
   // Captured from the page's current origin - storageState() does not include
   // sessionStorage, so it has to be read out separately.
   const sessionStorage = await page.evaluate(() => ({ ...window.sessionStorage }));

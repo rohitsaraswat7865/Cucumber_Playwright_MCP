@@ -1,3 +1,4 @@
+
 # Playwright
 node_modules/
 /test-results/
@@ -7,3 +8,7 @@ node_modules/
 /playwright/.auth/
 /.auth/
 /.playwright-mcp/
+/.features-gen/
+
+# Claude Code - personal settings (shared hooks live in .claude/settings.json)
+/.claude/settings.local.json

@@ -4,7 +4,13 @@ import { localStorageByOrigin, readSessionState } from '../session-state.js';
 
 const { Given, When, Then } = createBdd();
 
-Given("I inject session state from file", async ({ context, page }) => {
+function xpathLiteral(value) {
+  if (!value.includes("'")) return `'${value}'`;
+  const parts = value.split("'").map((part) => `'${part}'`);
+  return `concat(${parts.join(`, "'", `)})`;
+}
+
+Given('I inject session state from file', async ({ context, page }) => {
   // Throws if the file is missing or not in native storageState format, rather
   // than quietly injecting nothing and letting the scenario run logged out.
   const { cookies, origins, sessionStorage } = readSessionState();
@@ -13,11 +19,6 @@ Given("I inject session state from file", async ({ context, page }) => {
 
   const byOrigin = localStorageByOrigin(origins);
 
-  // addInitScript runs before any page script on every navigation, which is
-  // required since localStorage/sessionStorage can only be set once the page
-  // has landed on the owning origin. localStorage is applied per-origin to
-  // match how Playwright itself restores storageState; sessionStorage was
-  // captured as a flat map, so it is applied wherever the run lands.
   await page.addInitScript(
     ({ byOrigin, sessionStorage }) => {
       for (const [key, value] of Object.entries(byOrigin[window.location.origin] ?? {})) {
@@ -31,53 +32,64 @@ Given("I inject session state from file", async ({ context, page }) => {
   );
 });
 
-Given("I am on home page", async ({ page }) => {
-  await page.goto('https://www.saucedemo.com/inventory.html');
-  //await expect(page.locator("xpath=(//a[text()='My Account'])[position()=1]")).toBeVisible();
+Given('Load default page', async ({ page }) => {
+  await page.goto('https://opensource-demo.orangehrmlive.com/web/index.php/dashboard/index');
+
+  await page.waitForURL('**/dashboard/index', {
+    timeout: 40_000,
+  });
+
+  await page.waitForLoadState('networkidle');
 });
 
-
-When("Home page has a title {string}", async ({page}, str) => {
-  await expect(page).toHaveTitle(str);
+When('I click on {string} in left navigation panel', async ({ page }, str) => {
+  await page
+    .locator(
+      `xpath=//nav[@aria-label='Sidepanel']//a[contains(@class,'oxd-main-menu-item')][.//span[text()='${str}']]`,
+    )
+    .click();
 });
 
-When("I add following itms to the cart", async ({page}, dataTable) => {
+Then('Top bar header contains text {string}', async ({ page }, str) => {
+  await expect(
+    page.locator(
+      `xpath=//span[contains(@class,'oxd-topbar-header-breadcrumb')]/h6[contains(.,'${str}')]`,
+    ),
+  ).toBeVisible();
+});
 
-  const items = dataTable.hashes();
-
-  await expect(page.getByText('Products', { exact: true })).toBeVisible();
-
-  for (const row of items) {
-    const itemName = row.NAME;
-
-    await page
-      .locator('[data-test="inventory-item"]')
-      .filter({ hasText: itemName })
-      .getByRole('button', { name: 'Add to cart' })
-      .click();
+Then('Left navigation panel contains following items', async ({ page }, table) => {
+  for (const { NAME } of table.hashes()) {
+    await expect(
+      page.locator(
+        `xpath=//nav[@aria-label='Sidepanel']//ul[contains(@class,'oxd-main-menu')]//a[contains(@class,'oxd-main-menu-item')][.//span[text()='${NAME}']]`,
+      ),
+    ).toBeVisible();
   }
-
-  await expect(page.locator('#shopping_cart_container')).toHaveText(String(items.length));
 });
 
-When("I click on cart icon", async ({page}) => {
-  await page.locator('[data-test="shopping-cart-link"]').click();
+When('I type {string} in Search', async ({ page }, str) => {
+  await page
+    .locator("xpath=//nav[@aria-label='Sidepanel']//input[@placeholder='Search']")
+    .fill(str);
 });
 
-Then("Cart page is loaded", async ({page}) => {
-  await page.waitForLoadState('networkidle');
-  await expect(page).toHaveURL(/cart\.html/);
+Then('Only {string} is visible in left navigation panel', async ({ page }, str) => {
+  await expect(
+    page.locator(
+      "xpath=//nav[@aria-label='Sidepanel']//ul[contains(@class,'oxd-main-menu')]//a[contains(@class,'oxd-main-menu-item')]",
+    ),
+  ).toHaveCount(1);
+
+  await expect(
+    page.locator(
+      `xpath=//nav[@aria-label='Sidepanel']//ul[contains(@class,'oxd-main-menu')]//a[contains(@class,'oxd-main-menu-item')][.//span[text()=${xpathLiteral(str)}]]`,
+    ),
+  ).toBeVisible();
 });
 
-When("I click on checkout button on cart page", async ({page}) => {
-  await page.getByRole('button', { name: 'Checkout' }).click();
-});
-
-Then("Checkout step page has text {string}", async ({page}, str) => {
-  //TODO - implement
-});
-
-Then("Checkout step page is loaded", async ({page}) => {
-  await page.waitForLoadState('networkidle');
-  await expect(page).toHaveURL(/checkout-step-one\.html/);
+When('I click on main menu {string} in left navigation panel', async ({ page }, str) => {
+  await page
+    .locator(`xpath=//nav[@aria-label='Sidepanel']//input[@placeholder=${xpathLiteral(str)}]`)
+    .click();
 });

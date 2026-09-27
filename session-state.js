@@ -147,16 +147,6 @@ export function readSessionState() {
   };
 }
 
-/** True only if the file on disk exists and is usable as-is. */
-export function hasUsableSessionState() {
-  try {
-    readSessionState();
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 /**
  * Captures `context` in native storageState format, appends `sessionStorage`,
  * and writes the result to SESSION_FILE. Validates before returning so a bad
@@ -193,11 +183,12 @@ export const INIT_SCRIPT_FILE = path.resolve('.auth/session.init.js');
  * Writes the MCP init script: the half of the session state that
  * `--storage-state` cannot carry.
  *
- * The Playwright MCP server has no tool for restoring web storage
- * (`--caps` accepts only vision/pdf/devtools as of v0.0.79 - there is no
- * `storage` capability and no browser_sessionstorage_* tools). What it does
- * have is `--init-script <path>`, documented as "evaluated in every page
- * before any of the page's scripts" - i.e. the CLI equivalent of
+ * The Playwright MCP server does have opt-in storage tools
+ * (`--caps=storage`: browser_localstorage_* / browser_sessionstorage_* /
+ * browser_cookie_*), but this repo deliberately leaves them off - manual
+ * get/set calls could run out of step with automatic seeding (CLAUDE.md §7).
+ * It uses `--init-script <path>` instead, documented as "evaluated in every
+ * page before any of the page's scripts" - i.e. the CLI equivalent of
  * page.addInitScript(), which is exactly the workaround the Playwright auth
  * docs prescribe for sessionStorage.
  *

@@ -1,7 +1,3 @@
 {
-  "recommendations": [
-    "anthropic.claude-code",
-    "upscaled-dev.specwright",    
-    "esbenp.prettier-vscode"
-  ]
+  "recommendations": ["anthropic.claude-code", "upscaled-dev.specwright", "esbenp.prettier-vscode"]
 }
