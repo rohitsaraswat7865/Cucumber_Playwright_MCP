@@ -8,7 +8,6 @@
 - 🔐 **One login per run** — [global-setup.js](global-setup.js) captures the session once and every scenario replays it ([Session state](#-session-state))
 - 📊 **Reporting** — HTML report in `playwright-report/`, JSON results in `test-results/results.json`
 - 🔁 **Parallel runs** — fully parallel test files; the `test:parallel:*` scripts use 3 workers
-- 🖥️ **More browsers on demand** — Chromium is configured; Mobile Chrome, Mobile Safari (WebKit), Edge and Chrome projects are ready to uncomment in [playwright.config.js](playwright.config.js)
 - 🤖 **Claude Code, with guardrails** — Claude drafts steps against the live app through the Playwright MCP browser, and hooks stop it from breaking the project's rules ([Working with Claude Code](#-working-with-claude-code))
 - 🧩 **Editor setup** — [.vscode/settings.json](.vscode/settings.json) wires up Specwright and Prettier format-on-save
 
