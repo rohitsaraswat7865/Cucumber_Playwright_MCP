@@ -118,6 +118,9 @@ It maps the repo — which files Claude may edit and which are generated — and
 - Your personal permission allow list lives in `.claude/settings.local.json` (gitignored). A hook's block overrides it.
 - Hooks run under Git Bash, or PowerShell where Git Bash isn't installed; the commands work in both.
 
+**How this project works**
+![alt text](image.png)
+
 ## 🛠️ Recommended VS Code extensions
 
 [.vscode/settings.json](.vscode/settings.json) is already configured for these — install them from the Extensions view:
