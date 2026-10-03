@@ -45,7 +45,7 @@ npx playwright install     # browser binaries: Chromium runs the tests, Firefox 
 | `npm run test:parallel:headed`                     | 🖼️ Clean, generate, and run with 3 workers, browser visible (`--headed`)     |
 | `npm run test:parallel:headless`                   | 🤖 Clean, generate, and run with 3 workers, no browser UI                    |
 | `npm run test:debug`                               | 🐞 Clean, generate, and run in the Playwright Inspector (headed, one worker) |
-| `npm run test:debug -- features/TEST-XXX1.feature` | 🐞 Same, for a single `.feature` file                                        |
+| `npm run test:debug -- --grep "@tag"               | 🐞 Same, for a single tag                                        |
 | `npm run report`                                   | 📊 Open the last Playwright HTML report                                      |
 | `npm run format` / `npm run format:check`          | 🎨 Format with Prettier / only check formatting                              |
 
