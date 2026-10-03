@@ -1,0 +1,254 @@
+{
+  "packageJson": {
+    "type": "module",
+    "scripts": {
+      "bddgen": "bddgen",
+      "clean": "node -e \"require('fs').rmSync('.features-gen',{recursive:true,force:true})\"",
+      "test:parallel:headless": "npm run clean && bddgen && playwright test --workers=3",
+      "test:debug": "npm run clean && bddgen && playwright test --debug",
+      "wrapped": "bash run-suite.sh",
+      "viaNode": "node tools/launch.js",
+      "safe": "node tools/safe.js",
+      "format": "prettier --write ."
+    }
+  },
+  "files": {
+    "run-suite.sh": "echo starting\nnpm run test:debug\n",
+    "run.ps1": "Write-Host starting\nnpx bddgen\n",
+    "tools/launch.js": "import { execSync } from 'node:child_process';\nexecSync('npx playwright test --headed');\n",
+    "tools/spawn.js": "import { spawnSync } from 'node:child_process';\nspawnSync('npx', ['playwright', 'test']);\n",
+    "tools/setup.js": "import '../global-setup.js';\n",
+    "tools/safe.js": "// Doesn't run anything.\nconsole.log('formatting');\n"
+  },
+  "noSuiteRun": {
+    "deny": [
+      "npx playwright test",
+      "npm run test:debug -- features/x.feature",
+      "cd /tmp && npx bddgen",
+      "bash -c \"npm run test:parallel:headless\"",
+      "node global-setup.js",
+      "CI=1 timeout 60 npx playwright test",
+      "pnpm exec playwright test",
+      "bunx bddgen",
+      "bun run test:debug",
+      "bash run-suite.sh",
+      "./run-suite.sh",
+      "source run-suite.sh",
+      "powershell -File run.ps1",
+      "& ./run.ps1",
+      "node tools/launch.js",
+      "node tools/spawn.js",
+      "node tools/setup.js",
+      "npm run wrapped",
+      "npm run viaNode"
+    ],
+    "allow": [
+      "grep \"npx playwright test\" README.md",
+      "npm run format",
+      "npm run clean",
+      "npm run safe",
+      "node tools/safe.js",
+      "node --check tools/launch.js",
+      "npx playwright show-report",
+      "command -v bddgen",
+      "cat run-suite.sh",
+      "git status && git diff 2>&1"
+    ]
+  },
+  "shellWrites": {
+    "deny": [
+      "echo x > .auth/session.json",
+      "echo x >> .features-gen/a.spec.js",
+      "echo x >.auth/session.init.js",
+      "rm -rf .auth",
+      "cp /tmp/x.json .auth/session.json",
+      "Set-Content -Path .auth/session.init.js -Value x",
+      "Remove-Item -Recurse playwright-report",
+      "sed -i s/a/b/ .features-gen/x.spec.js",
+      "bash -c \"touch test-results/x\"",
+      "node -e \"require('fs').writeFileSync('.auth/session.json','{}')\"",
+      "echo x > foo/.features-gen/y.js",
+      "echo x | tee package-lock.json",
+      "echo x > .claude/hooks/hook.log"
+    ],
+    "ask": [
+      "echo {} > .claude/settings.json",
+      "rm .claude/hooks/check-session-gate.cjs",
+      "sed -i s/x/y/ session-state.js",
+      "Set-Content .mcp.json x",
+      "cp /tmp/s.json .claude/settings.local.json"
+    ],
+    "allow": [
+      "ls .auth",
+      "echo hi > notes.txt",
+      "cp package-lock.json backup.json",
+      "sed s/a/b/ .features-gen/x.spec.js",
+      "git diff 2>&1",
+      "npm run clean",
+      "node -e \"console.log(require('fs').readFileSync('package.json','utf8'))\"",
+      "cat .claude/settings.json"
+    ]
+  },
+  "fileEdits": {
+    "deny": [
+      ".auth/session.json",
+      ".features-gen/features/a.feature.spec.js",
+      "foo/.features-gen/x.js",
+      "package-lock.json",
+      "node_modules/x/index.js",
+      ".claude/hooks/hook.log"
+    ],
+    "ask": [
+      ".claude/settings.json",
+      ".claude/settings.local.json",
+      ".claude/hooks/check-session-gate.cjs",
+      ".claude/hooks/test/fixtures.json",
+      "session-state.js",
+      ".mcp.json"
+    ],
+    "allow": [
+      "steps/new.steps.js",
+      "features/a.feature",
+      "CLAUDE.md",
+      "global-setup.js",
+      "package.json",
+      ".claude/notes.md"
+    ]
+  },
+  "steps": {
+    "files": {
+      "steps/base.steps.js": "import { createBdd } from 'playwright-bdd';\n\nconst { Given, When } = createBdd();\n\n/*Given('a commented step', async () => {\n  // TODO\n});*/\n\nGiven('I open {string}', async ({ page }, url) => {\n  await page.goto(url);\n});\n\nWhen(\n  'I do a long thing with {string} and more words here',\n  async ({ page }, str) => {\n    await page.locator(\"xpath=//a[text()='x']\").click();\n  },\n);\n\nGiven('a stub step {string}', async ({ page }, value) => {\n  // TODO -- implement\n});\n",
+      "steps/other.steps.js": "import { createBdd } from 'playwright-bdd';\n\nconst { Then } = createBdd();\n\nThen('the page shows {string}', async ({ page }, text) => {\n  await page.locator('#x').click();\n});\n"
+    },
+    "cases": [
+      {
+        "name": "modifying an existing step body",
+        "expect": "deny",
+        "tool": "Edit",
+        "input": {
+          "file_path": "steps/base.steps.js",
+          "old_string": "await page.goto(url);",
+          "new_string": "await page.goto(url, { waitUntil: 'load' });"
+        }
+      },
+      {
+        "name": "renaming an existing step",
+        "expect": "deny",
+        "tool": "Edit",
+        "input": {
+          "file_path": "steps/base.steps.js",
+          "old_string": "'I open {string}'",
+          "new_string": "'I open the page {string}'"
+        }
+      },
+      {
+        "name": "deleting an existing step",
+        "expect": "deny",
+        "tool": "Edit",
+        "input": {
+          "file_path": "steps/base.steps.js",
+          "old_string": "Given('I open {string}', async ({ page }, url) => {\n  await page.goto(url);\n});\n",
+          "new_string": ""
+        }
+      },
+      {
+        "name": "a comment-only change inside an existing step",
+        "expect": "deny",
+        "tool": "Edit",
+        "input": {
+          "file_path": "steps/base.steps.js",
+          "old_string": "  await page.goto(url);\n",
+          "new_string": "  // Go there.\n  await page.goto(url);\n"
+        }
+      },
+      {
+        "name": "adding a step another file already defines",
+        "expect": "deny",
+        "tool": "Edit",
+        "input": {
+          "file_path": "steps/base.steps.js",
+          "old_string": "  // TODO -- implement\n});\n",
+          "new_string": "  // TODO -- implement\n});\n\nGiven('the page shows {string}', async ({ page }, text) => {\n  await page.locator('#y').click();\n});\n"
+        }
+      },
+      {
+        "name": "a new file redefining an existing step",
+        "expect": "deny",
+        "tool": "Write",
+        "input": {
+          "file_path": "steps/new.steps.js",
+          "content": "import { createBdd } from 'playwright-bdd';\n\nconst { Given } = createBdd();\n\nGiven('I open {string}', async ({ page }, url) => {\n  await page.goto(url);\n});\n"
+        }
+      },
+      {
+        "name": "filling a TODO stub but changing its parameters",
+        "expect": "deny",
+        "tool": "Edit",
+        "input": {
+          "file_path": "steps/base.steps.js",
+          "old_string": "async ({ page }, value) => {\n  // TODO -- implement",
+          "new_string": "async ({ page, context }, value) => {\n  await page.goto(value);"
+        }
+      },
+      {
+        "name": "filling a TODO stub",
+        "expect": "ask",
+        "tool": "Edit",
+        "input": {
+          "file_path": "steps/base.steps.js",
+          "old_string": "  // TODO -- implement\n",
+          "new_string": "  await page.goto(value);\n"
+        }
+      },
+      {
+        "name": "adding a new step",
+        "expect": "allow",
+        "tool": "Edit",
+        "input": {
+          "file_path": "steps/base.steps.js",
+          "old_string": "  // TODO -- implement\n});\n",
+          "new_string": "  // TODO -- implement\n});\n\nWhen('I press {string}', async ({ page }, key) => {\n  await page.keyboard.press(key);\n});\n"
+        }
+      },
+      {
+        "name": "editing a commented-out step",
+        "expect": "allow",
+        "tool": "Edit",
+        "input": {
+          "file_path": "steps/base.steps.js",
+          "old_string": "a commented step",
+          "new_string": "a commented-out step"
+        }
+      },
+      {
+        "name": "reformatting without changing any step",
+        "expect": "allow",
+        "tool": "Edit",
+        "input": {
+          "file_path": "steps/base.steps.js",
+          "old_string": "When(\n  'I do a long thing with {string} and more words here',\n  async ({ page }, str) => {\n    await page.locator(\"xpath=//a[text()='x']\").click();\n  },\n);",
+          "new_string": "When('I do a long thing with {string} and more words here', async ({ page }, str) => {\n  await page.locator(\"xpath=//a[text()='x']\").click();\n});"
+        }
+      },
+      {
+        "name": "a new file with only new steps",
+        "expect": "allow",
+        "tool": "Write",
+        "input": {
+          "file_path": "steps/new.steps.js",
+          "content": "import { createBdd } from 'playwright-bdd';\n\nconst { Then } = createBdd();\n\nThen('a brand new check {string}', async ({ page }, s) => {\n  await page.locator('#z').click();\n});\n"
+        }
+      },
+      {
+        "name": "an edit whose old_string doesn't match",
+        "expect": "allow",
+        "tool": "Edit",
+        "input": {
+          "file_path": "steps/base.steps.js",
+          "old_string": "this text is not in the file",
+          "new_string": "x"
+        }
+      }
+    ]
+  }
+}

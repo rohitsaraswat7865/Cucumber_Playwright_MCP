@@ -6,3 +6,4 @@ blob-report/
 .auth/
 .playwright-mcp/
 package-lock.json
+.claude/hooks/hook.log*

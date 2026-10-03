@@ -1,14 +1,10 @@
-
-# Playwright
+.env
 node_modules/
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-/playwright/.auth/
-/.auth/
-/.playwright-mcp/
-/.features-gen/
-
-# Claude Code - personal settings (shared hooks live in .claude/settings.json)
-/.claude/settings.local.json
+.features-gen/
+test-results/
+playwright-report/
+blob-report/
+.auth/
+.playwright-mcp/
+.claude/hooks/hook.log*
+.claude/settings.local.json

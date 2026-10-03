@@ -16,8 +16,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"require(require('path').join(process.env.CLAUDE_PROJECT_DIR||'.','.claude','hooks','check-no-suite-run.cjs'))\"",
+            "command": "node -e \"try{require(require('path').join(process.env.CLAUDE_PROJECT_DIR||'.','.claude','hooks','check-no-suite-run.cjs'))}catch(e){process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'PreToolUse',permissionDecision:'deny',permissionDecisionReason:'Blocked by CLAUDE.md \\u00a72 (N1): the suite-run guard could not start, so the call is blocked - tell the user. '+e.message}}))}\"",
             "statusMessage": "Checking the command doesn't run the suite (CLAUDE.md §2, N1)"
+          },
+          {
+            "type": "command",
+            "command": "node -e \"try{require(require('path').join(process.env.CLAUDE_PROJECT_DIR||'.','.claude','hooks','check-shell-writes.cjs'))}catch(e){process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'PreToolUse',permissionDecision:'deny',permissionDecisionReason:'Blocked by CLAUDE.md \\u00a71 (N4): the shell-write guard could not start, so the call is blocked - tell the user. '+e.message}}))}\"",
+            "statusMessage": "Checking the command doesn't write generated or harness files (CLAUDE.md §1, N4)"
           }
         ]
       },
@@ -26,8 +31,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"require(require('path').join(process.env.CLAUDE_PROJECT_DIR||'.','.claude','hooks','check-generated-files.cjs'))\"",
-            "statusMessage": "Checking the target isn't generated output (CLAUDE.md §1, N4)"
+            "command": "node -e \"try{require(require('path').join(process.env.CLAUDE_PROJECT_DIR||'.','.claude','hooks','check-generated-files.cjs'))}catch(e){process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'PreToolUse',permissionDecision:'deny',permissionDecisionReason:'Blocked by CLAUDE.md \\u00a71 (N4): the generated-file guard could not start, so the call is blocked - tell the user. '+e.message}}))}\"",
+            "statusMessage": "Checking the target isn't generated output or the harness (CLAUDE.md §1, N4)"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"try{require(require('path').join(process.env.CLAUDE_PROJECT_DIR||'.','.claude','hooks','check-step-edits.cjs'))}catch(e){process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'PreToolUse',permissionDecision:'deny',permissionDecisionReason:'Blocked by CLAUDE.md \\u00a74 (N6): the step-edit guard could not start, so the call is blocked - tell the user. '+e.message}}))}\"",
+            "statusMessage": "Checking no existing step definition changes (CLAUDE.md §4, N6)"
           }
         ]
       }

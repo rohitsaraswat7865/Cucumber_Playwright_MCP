@@ -11,7 +11,8 @@
     "test:debug": "npm run clean && bddgen && playwright test --debug",
     "report": "playwright show-report",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "hooks:test": "node --test .claude/hooks/test/hooks.test.cjs"
   },
   "keywords": [],
   "author": "",
