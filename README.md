@@ -1,13 +1,34 @@
 # mb-autotest-ai
 
+Playwright + Gherkin (BDD) test framework (`playwright-bdd`, ESM) with Claude Code guardrails. Tests run in Chromium only.
+
 ## ✨ Capabilities
 
 - 🥒 **Gherkin scenarios** — test cases in `Given / When / Then` under [features/](features/), run by the Playwright test runner
+- 🧭 **XPath-only locators** — step definitions scope to a container, then assert with web-first assertions; list inputs come in as data tables and XPath literals are apostrophe-safe
 - 🔐 **One login per run** — [global-setup.js](global-setup.js) captures the session once and every scenario replays it ([Session state](#-session-state))
-- 📊 **Reporting** — HTML report in `playwright-report/`, JSON results in `test-results/results.json`
-- 🔁 **Parallel runs** — fully parallel test files; the `test:parallel:*` scripts use 3 workers
+- 📊 **Reporting** — HTML report in `playwright-report/`, JSON results in `test-results/results.json`, traces collected for every test
+- 🔁 **Parallel runs** — the `test:parallel:*` scripts use 3 workers (config default is 2); one retry locally, two on CI
+- 🐢 **Slow-motion by default** — 1 s `slowMo` between actions (see [playwright.config.js](playwright.config.js)); lower it for faster runs
 - 🤖 **Claude Code, with guardrails** — Claude drafts steps against the live app through the Playwright MCP browser, and hooks stop it from breaking the project's rules ([Working with Claude Code](#-working-with-claude-code))
 - 🧩 **Editor setup** — [.vscode/settings.json](.vscode/settings.json) wires up Specwright and Prettier format-on-save
+
+## 🧪 Current test coverage
+
+| Feature                                           | Scenario (tag)                                    | What it checks                                                                                                                               |
+| ------------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| [features/TEST-XXX1.feature](features/TEST-XXX1.feature) | `Test Automation - Project Data` (`@TEST-XXX1`) | Logged-in dashboard: open **PIM** from the left nav, check the top-bar header, verify the 10 expected menu items, search "Info" and confirm only **My Info** remains |
+
+Available steps in [steps/test.steps.js](steps/test.steps.js):
+
+- `I inject session state from file` — replays cookies, `localStorage` and `sessionStorage`
+- `Load default page` — opens the dashboard and waits for its URL
+- `I click on {string} in left navigation panel`
+- `Top bar header contains text {string}`
+- `Left navigation panel contains following items` (data table, `NAME` column)
+- `I click on main menu {string} in left navigation panel` (clicks the nav input with that placeholder)
+- `I type {string} in Search`
+- `Only {string} is visible in left navigation panel`
 
 ## 📁 Project structure
 
@@ -45,9 +66,10 @@ npx playwright install     # browser binaries: Chromium runs the tests, Firefox 
 | `npm run test:parallel:headed`                     | 🖼️ Clean, generate, and run with 3 workers, browser visible (`--headed`)     |
 | `npm run test:parallel:headless`                   | 🤖 Clean, generate, and run with 3 workers, no browser UI                    |
 | `npm run test:debug`                               | 🐞 Clean, generate, and run in the Playwright Inspector (headed, one worker) |
-| `npm run test:debug -- --grep "@tag"`              | 🐞 Same, for a single tag                                        |
+| `npm run test:debug -- features/TEST-XXX1.feature` | 🐞 Same, for a single `.feature` file                                        |
 | `npm run report`                                   | 📊 Open the last Playwright HTML report                                      |
 | `npm run format` / `npm run format:check`          | 🎨 Format with Prettier / only check formatting                              |
+| `npm run hooks:test`                               | 🛡️ Run the self-tests for the Claude Code hooks                              |
 
 Every test run starts with global setup: Firefox (headless by default; set `LOGIN_HEADLESS=false` in `.env` to see it) logs in and writes a fresh `.auth/` (see [Session state](#-session-state)).
 
@@ -75,7 +97,7 @@ Two files are needed because Playwright's `storageState` can't carry `sessionSto
 - 🚫 **Never hand-edit `.auth/`.** Every run wipes it and logs in fresh (including `test:debug`), so re-running the suite is how you replace an expired session.
 - 📇 **IndexedDB isn't captured** (that needs `storageState({ indexedDB: true })`). If your app keeps its token there, the session will be incomplete.
 - 🔑 **`session.init.js` holds real session values in plaintext.** `.auth/` is gitignored — keep it that way.
-- 🔨 **The login targets the site** (Firefox, headless unless `LOGIN_HEADLESS=false`, in [global-setup.js](global-setup.js)); replace that flow to point the suite at your own app.
+- 🔨 **The login targets one specific application** (Firefox, headless unless `LOGIN_HEADLESS=false`, in [global-setup.js](global-setup.js)); the `Load default page` step uses the same host. Replace both to point the suite at your own app.
 
 ## 🤖 Working with Claude Code
 

@@ -6,7 +6,7 @@ const { Given, When, Then } = createBdd();
 
 function xpathLiteral(value) {
   if (!value.includes("'")) return `'${value}'`;
-  const parts = value.split("'").map((part) => `'${part}'`);
+  const parts = value.split("'").map(part => `'${part}'`);
   return `concat(${parts.join(`, "'", `)})`;
 }
 
@@ -40,56 +40,4 @@ Given('Load default page', async ({ page }) => {
   });
 
   await page.waitForLoadState('networkidle');
-});
-
-When('I click on {string} in left navigation panel', async ({ page }, str) => {
-  await page
-    .locator(
-      `xpath=//nav[@aria-label='Sidepanel']//a[contains(@class,'oxd-main-menu-item')][.//span[text()='${str}']]`,
-    )
-    .click();
-});
-
-Then('Top bar header contains text {string}', async ({ page }, str) => {
-  await expect(
-    page.locator(
-      `xpath=//span[contains(@class,'oxd-topbar-header-breadcrumb')]/h6[contains(.,'${str}')]`,
-    ),
-  ).toBeVisible();
-});
-
-Then('Left navigation panel contains following items', async ({ page }, table) => {
-  for (const { NAME } of table.hashes()) {
-    await expect(
-      page.locator(
-        `xpath=//nav[@aria-label='Sidepanel']//ul[contains(@class,'oxd-main-menu')]//a[contains(@class,'oxd-main-menu-item')][.//span[text()='${NAME}']]`,
-      ),
-    ).toBeVisible();
-  }
-});
-
-When('I type {string} in Search', async ({ page }, str) => {
-  await page
-    .locator("xpath=//nav[@aria-label='Sidepanel']//input[@placeholder='Search']")
-    .fill(str);
-});
-
-Then('Only {string} is visible in left navigation panel', async ({ page }, str) => {
-  await expect(
-    page.locator(
-      "xpath=//nav[@aria-label='Sidepanel']//ul[contains(@class,'oxd-main-menu')]//a[contains(@class,'oxd-main-menu-item')]",
-    ),
-  ).toHaveCount(1);
-
-  await expect(
-    page.locator(
-      `xpath=//nav[@aria-label='Sidepanel']//ul[contains(@class,'oxd-main-menu')]//a[contains(@class,'oxd-main-menu-item')][.//span[text()=${xpathLiteral(str)}]]`,
-    ),
-  ).toBeVisible();
-});
-
-When('I click on main menu {string} in left navigation panel', async ({ page }, str) => {
-  await page
-    .locator(`xpath=//nav[@aria-label='Sidepanel']//input[@placeholder=${xpathLiteral(str)}]`)
-    .click();
 });
