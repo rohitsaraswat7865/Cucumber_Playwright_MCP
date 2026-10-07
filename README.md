@@ -13,23 +13,6 @@ Playwright + Gherkin (BDD) test framework (`playwright-bdd`, ESM) with Claude Co
 - 🤖 **Claude Code, with guardrails** — Claude drafts steps against the live app through the Playwright MCP browser, and hooks stop it from breaking the project's rules ([Working with Claude Code](#-working-with-claude-code))
 - 🧩 **Editor setup** — [.vscode/settings.json](.vscode/settings.json) wires up Specwright and Prettier format-on-save
 
-## 🧪 Current test coverage
-
-| Feature                                           | Scenario (tag)                                    | What it checks                                                                                                                               |
-| ------------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| [features/TEST-XXX1.feature](features/TEST-XXX1.feature) | `Test Automation - Project Data` (`@TEST-XXX1`) | Logged-in dashboard: open **PIM** from the left nav, check the top-bar header, verify the 10 expected menu items, search "Info" and confirm only **My Info** remains |
-
-Available steps in [steps/test.steps.js](steps/test.steps.js):
-
-- `I inject session state from file` — replays cookies, `localStorage` and `sessionStorage`
-- `Load default page` — opens the dashboard and waits for its URL
-- `I click on {string} in left navigation panel`
-- `Top bar header contains text {string}`
-- `Left navigation panel contains following items` (data table, `NAME` column)
-- `I click on main menu {string} in left navigation panel` (clicks the nav input with that placeholder)
-- `I type {string} in Search`
-- `Only {string} is visible in left navigation panel`
-
 ## 📁 Project structure
 
 ```
