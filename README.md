@@ -1,6 +1,6 @@
 # mb-autotest-ai
 
-Playwright + Gherkin (BDD) test framework (`playwright-bdd`, ESM) with Claude Code guardrails. Tests run in Chromium only.
+Playwright + Gherkin (BDD) test framework (`playwright-bdd`, ESM) with Claude Code guardrails.
 
 ## ✨ Capabilities
 
