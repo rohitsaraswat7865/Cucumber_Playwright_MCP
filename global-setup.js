@@ -18,7 +18,7 @@ export default async function globalSetup() {
   fs.rmSync('.auth', { recursive: true, force: true });
 
   const browser = await firefox.launch({
-    headless: false,
+    headless: true,
     slowMo: 1_500,
   });
   const context = await browser.newContext();
