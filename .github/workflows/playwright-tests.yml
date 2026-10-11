@@ -7,25 +7,24 @@ on:
 jobs:
   playwright-tests:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify Docker access
-        run: docker --version && docker info
+      - name: Build Docker image
+        run: docker build -t cucumber-playwright-mcp .
 
-      - name: Build Playwright image
-        run: docker build -t my-playwright-image .
-
-      - name: Run Playwright tests in container
+      - name: Run Playwright tests in Docker
         run: |
           mkdir -p playwright-report test-results docker-logs
           docker run --rm \
             -v "${{ github.workspace }}/playwright-report:/app/playwright-report" \
             -v "${{ github.workspace }}/test-results:/app/test-results" \
             -v "${{ github.workspace }}/docker-logs:/app/docker-logs" \
-            my-playwright-image
+            cucumber-playwright-mcp
 
       - name: Upload test artifacts
         if: always()
@@ -36,5 +35,4 @@ jobs:
             playwright-report/
             test-results/
             docker-logs/
-          if-no-files-found: warn
-          retention-days: 7
+          if-no-files-found: ignore
