@@ -42,17 +42,17 @@ npx playwright install     # browser binaries: Chromium runs the tests, Firefox 
 
 ## ▶️ Running tests
 
-| Command                                            | Description                                                                  |
-| -------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `npm run bddgen`                                   | ⚙️ Generate BDD spec files from `.feature` files into `.features-gen/`       |
-| `npm run clean`                                    | 🧹 Delete `.features-gen/` (every test script does this first)               |
-| `npm run test:parallel:headed`                     | 🖼️ Clean, generate, and run with 3 workers, browser visible (`--headed`)     |
-| `npm run test:parallel:headless`                   | 🤖 Clean, generate, and run with 3 workers, no browser UI                    |
-| `npm run test:debug`                               | 🐞 Clean, generate, and run in the Playwright Inspector (headed, one worker) |
-| `npm run test:debug -- --grep "@tag"               | 🐞 For a single tagged test scenario                                         |
-| `npm run report`                                   | 📊 Open the last Playwright HTML report                                      |
-| `npm run format` / `npm run format:check`          | 🎨 Format with Prettier / only check formatting                              |
-| `npm run hooks:test`                               | 🛡️ Run the self-tests for the Claude Code hooks                              |
+| Command                                            | Description                                                                       |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------|
+| `npm run bddgen`                                   | ⚙️ Generate BDD spec files from `.feature` files into `.features-gen/`           |
+| `npm run clean`                                    | 🧹 Delete `.features-gen/` (every test script does this first)                   |
+| `npm run test:parallel:headed`                     | 🖼️ Clean, **generate**, and run with 3 workers, browser visible (`--headed`)     |
+| `**npm run test:parallel:headless**`               | 🤖 Clean, **generate**, and run with 3 workers, no browser UI                    |
+| `npm run test:debug`                               | 🐞 Clean, **generate**, and run in the Playwright Inspector (headed, one worker) |
+| `**npm run test:debug -- --grep "@tag"**           | 🐞 For a single tagged test scenario                                             |
+| `npm run report`                                   | 📊 Open the last Playwright HTML report                                          |
+| `npm run format` / `npm run format:check`          | 🎨 Format with Prettier / only check formatting                                  |
+| `npm run hooks:test`                               | 🛡️ Run the self-tests for the Claude Code hooks                                  |
 
 Every test run starts with global setup: Firefox (headless by default; set `LOGIN_HEADLESS=false` in `.env` to see it) logs in and writes a fresh `.auth/` (see [Session state](#-session-state)).
 
