@@ -6,18 +6,16 @@
 
 ## 0. Non-negotiables
 
-| #      | Rule                                                                                                                                                                                            | Enforced by                                           | Full text |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | --------- |
-| **N1** | Never run the test suite, `bddgen`, or global setup. Hand off instead.                                                                                                                          | 🔒 hook — common invocations, incl. via a script file | §2        |
-| **N2** | Never call `mcp__playwright__browser_*` until both `.auth/` artifacts pass the validity **and freshness** gate.                                                                                 | 🔒 hook — fails closed                                | §3        |
-| **N3** | Never write a locator, role, accessible name, URL, or title you haven't confirmed against the live page.                                                                                        | 🧠 you                                                | §4        |
-| **N4** | Never hand-edit a generated file — any ❌ path in §1 (`.auth/*`, `.features-gen/`, report dirs, …).                                                                                             | 🔒 hook — file tools + common shell writes            | §1        |
-| **N5** | Never call a step passing/working/done without a real run result.                                                                                                                               | 🧠 you                                                | §2, §4    |
-| **N6** | Never edit an existing step definition in any file under [steps/](steps/). Only add new steps for what's missing — sole exception: filling in an empty `TODO` stub once the user approves (§4). | 🔒 hook — file tools only                             | §4        |
+| #      | Rule                                                                                                            | Enforced by | See |
+| ------ | --------------------------------------------------------------------------------------------------------------- | ----------- | --- |
+| **N1** | Never run the test suite, `bddgen`, or global setup. Hand off instead.                                          | 🔒 hook     | §2  |
+| **N2** | Never call `mcp__playwright__browser_*` until both `.auth/` artifacts pass the validity **and freshness** gate. | 🔒 hook     | §3  |
+| **N3** | Never write a locator, role, accessible name, URL, or title you haven't confirmed against the live page.        | 🧠 you      | §4  |
+| **N4** | Never hand-edit a generated file — any ❌ path in §1.                                                           | 🔒 hook     | §1  |
+| **N5** | Never call a step passing/working/done without a real run result.                                               | 🧠 you      | §2  |
+| **N6** | Never edit an existing step definition under [steps/](steps/) — only add new ones (`TODO`-stub exception, §4).  | 🔒 hook     | §4  |
 
-🔒 = a `PreToolUse` hook in [.claude/settings.json](.claude/settings.json) checks every matching tool call and denies violations, whether or not you remember the rule. 🧠 = no hook can judge it, so it rests entirely on you. Either way, a denial is the rule working: hand off, and never reword or reroute a call to get past a hook. Hooks catch common cases only, so anything they miss is still forbidden. Every hook **fails closed**: if one crashes or can't load, the call is denied with a message saying so — tell the user; don't work around it. Some hooks answer **ask** instead of deny (harness files, §1; filling a `TODO` stub, §4): the user gets a prompt and decides. Never treat an approved prompt as standing permission for the next change.
-
-N3 and N5 stay 🧠 — no hook can tell a verified locator from a guessed one, or a real run result from an assumed one.
+🔒 = a `PreToolUse` hook in [.claude/settings.json](.claude/settings.json) denies violations; its message says why and what to do. 🧠 = rests on you. A denial is the rule working: hand off; never reword or reroute a call past a hook. Hooks catch common cases only — anything they miss is still forbidden. Hooks fail closed: if one crashes or can't start, tell the user (`npm run hooks:test` shows what broke). An approved **ask** prompt is not standing permission.
 
 The §/N numbers are part of the interface: hook deny messages in [.claude/hooks/](.claude/hooks/) (`§1 (N4)`, `§1`, `§2 (N1)`, `§3 (N2)`, `§3.3`, `§4 (N6)`), §8 below, and [README.md](README.md) all cite them. Renumbering this file means updating those in the same change.
 
@@ -27,62 +25,32 @@ The §/N numbers are part of the interface: hook deny messages in [.claude/hooks
 
 Playwright + Gherkin. ESM (`"type": "module"`). Tests run in Chromium only, headless by default — `test:parallel:headed` and `test:debug` run headed. The one-time login in global setup runs in Firefox, headless by default — set `LOGIN_HEADLESS=false` in `.env` to watch it headed (§5).
 
-| Path                                                                                                                            | Role                                                                                            | Editable                                       |
-| ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| [features/](features/) `**/*.feature`                                                                                           | Gherkin scenarios                                                                               | ✅                                             |
-| [steps/](steps/) `**/*.js`                                                                                                      | Step definitions via `createBdd()`                                                              | ✅ add only (N6)                               |
-| [playwright.config.js](playwright.config.js)                                                                                    | `defineBddConfig({ features, steps })` + runner config                                          | ✅                                             |
-| [global-setup.js](global-setup.js)                                                                                              | One-time login → writes both `.auth/` artifacts (§5)                                            | ✅                                             |
-| [session-state.js](session-state.js)                                                                                            | Format contract for session file (read/write/validate); the §3 gate hook imports it             | ⚠️ only when asked                             |
-| [package.json](package.json)                                                                                                    | npm scripts — `test:*` and `bddgen` fall under N1 (§2); the N1 hook reads them live             | ✅                                             |
-| [.mcp.json](.mcp.json)                                                                                                          | Playwright MCP server config (§7)                                                               | ⚠️ only when asked; never add `--caps=storage` |
-| [README.md](README.md), `.prettierrc.json`, `.prettierignore`, `.gitignore`, `.vscode/settings.json`, `.vscode/extensions.json` | Human docs; formatter, git, and editor config                                                   | ✅                                             |
-| [.claude/settings.json](.claude/settings.json), [.claude/hooks/](.claude/hooks/)                                                | The harness: shared hooks enforcing N1, N2, N4, N6, and their self-tests (`npm run hooks:test`) | ⚠️ only when asked                             |
-| `.claude/settings.local.json`                                                                                                   | The user's personal permission allow list (gitignored)                                          | ⚠️ only when asked                             |
-| `.auth/session.json`                                                                                                            | Captured session state — shape in §5                                                            | ❌ generated                                   |
-| `.auth/session.init.js`                                                                                                         | Web-storage init script loaded via `--init-script`                                              | ❌ generated                                   |
-| `package-lock.json`                                                                                                             | Dependency lock, rewritten by `npm install`                                                     | ❌ generated                                   |
-| `.claude/hooks/hook.log*`                                                                                                       | Audit log of hook denials / asks (gitignored; no secrets)                                       | ❌ generated                                   |
-| `.features-gen/` `test-results/` `playwright-report/` `blob-report/` `node_modules/` `.playwright-mcp/`                         | Build, report, and MCP output                                                                   | ❌ generated                                   |
+| Path                                                                                                                                                                               | Role                                                                     | Editable           |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------ |
+| [features/](features/), [steps/](steps/), [playwright.config.js](playwright.config.js), [global-setup.js](global-setup.js), [package.json](package.json), docs/config              | Scenarios, step definitions, runner config, one-time login (§5), scripts | ✅ (steps: N6)     |
+| [session-state.js](session-state.js), [.mcp.json](.mcp.json) (§7), [.claude/settings.json](.claude/settings.json), `.claude/settings.local.json`, [.claude/hooks/](.claude/hooks/) | The harness — can switch a guardrail off or grant permissions            | ⚠️ only when asked |
+| `.auth/`, `.features-gen/`, `test-results/`, `playwright-report/`, `blob-report/`, `node_modules/`, `.playwright-mcp/`, `package-lock.json`, `.claude/hooks/hook.log*`             | Generated output                                                         | ❌ never (N4)      |
 
-⚠️ = these configure the harness itself. Changing them can switch a guardrail off or grant you permissions, so touch them only when the user explicitly asks.
-
-N4: `.features-gen/` regenerates on every `bddgen` run, so hand-edits there are silently discarded.
-
-**Enforcement:** [check-generated-files.cjs](.claude/hooks/check-generated-files.cjs) (file tools) and [check-shell-writes.cjs](.claude/hooks/check-shell-writes.cjs) (shell: redirects, `rm`/`mv`/`cp`/`touch`/`tee`, `sed -i`, `Set-Content`/`Out-File`/`Remove-Item`/…, `node -e` file writes) **deny** writes into any ❌ path above — at any depth, so `foo/.features-gen/x` counts — and **ask** the user before writes to a ⚠️ harness file (`.claude/settings*.json`, `.claude/hooks/`, `session-state.js`, `.mcp.json`). Shell coverage is best-effort; any write it misses is still forbidden. Both read one path list in [hook-utils.cjs](.claude/hooks/hook-utils.cjs), which mirrors the ❌ rows here, [.gitignore](.gitignore) and [.prettierignore](.prettierignore) — keep them in step.
-
-Every hook decision other than allow is appended to `.claude/hooks/hook.log` (time, hook, tool, rule, decision, a short detail — never cookie or token values). That log is the only persistent record of what the hooks did.
-
-Step definitions are spread across **every** `.js` file under [steps/](steps/) — [playwright.config.js](playwright.config.js) globs `steps/**/*.js`, so all of them load. Never assume a single file holds them all (today it happens to be [steps/test.steps.js](steps/test.steps.js); tomorrow it won't be). Search the whole folder before concluding a step is missing.
+The ❌ list is mirrored in [hook-utils.cjs](.claude/hooks/hook-utils.cjs), the `permissions.deny` list in [.claude/settings.json](.claude/settings.json), [.gitignore](.gitignore) and [.prettierignore](.prettierignore) — keep them in step. Never read ❌ paths either — denied for file tools (`permissions.deny`) and shell reads ([check-shell-reads.cjs](.claude/hooks/check-shell-reads.cjs)).
 
 ---
 
 ## 2. 🚫 STOP — never run the suite
 
-Applies to: `npx playwright test`, any `npm run` script that wraps it (today `test:parallel:headed`, `test:parallel:headless`, `test:debug`), `bddgen`/`npx bddgen`/`npm run bddgen`, `node global-setup.js`, and `npm test` (no `test` script exists today; still forbidden) — the suite and global setup trigger a real login and `bddgen` rewrites `.features-gen/`, so all of it is the user's call, not yours. `clean`, `report`, `format`, `format:check` are not suite runs.
+Covers `playwright test`, any `test:*` script, `bddgen`, `npm test`, `node global-setup.js`. `clean`, `report`, `format`, `format:check`, `hooks:test` are fine.
 
-**Enforcement (best-effort):** [check-no-suite-run.cjs](.claude/hooks/check-no-suite-run.cjs) denies `Bash`/`PowerShell`/`Monitor` commands that start any of these — including in `&&` chains, subshells and `bash -c`, via `pnpm`/`yarn`/`bun`/`bunx`, and one level through a script file (`bash run.sh`, `.\run.ps1`, `node tools/x.js` whose contents spell out a run) — reading wrapper scripts live from [package.json](package.json). Ordinary invocations only; anything it misses is still forbidden. Fails closed.
-
-**Hand off instead** — stop and tell the user: (1) what you completed, (2) what's blocked + the exact unblocking command, (3) what stays unverified until it runs. Then wait.
-
-Do not route around this by checking a logged-out page, and do not call a step passing on the assumption it would pass (N5).
+**Hand off** — tell the user (1) what you completed, (2) what's blocked + the exact command, e.g. `npm run test:debug -- <path to .feature>`, (3) what stays unverified (N5). Then wait.
 
 ---
 
 ## 3. 🚫 STOP — `.auth/` validity + freshness gate
 
-Applies before **any** `mcp__playwright__browser_*` call. The one exception is `browser_close`, which reads nothing off a page — gating it would only leave a browser open.
+The hook runs these on every `browser_*` call except `browser_close`.
 
-**Enforcement:** [check-session-gate.cjs](.claude/hooks/check-session-gate.cjs) runs checks 1–3 below on every other `mcp__playwright__browser_*` call and denies the call if any fail. Its shape and expiry checks are `validateSessionState()` + `findExpiredCookies()` imported from [session-state.js](session-state.js), so it can't pass a file a real run would reject. It fails **closed** if the script throws or is missing (the wrapper command in [.claude/settings.json](.claude/settings.json) turns that into a deny) — but if `node` itself isn't on PATH the hook can't run at all and the call goes through, so the rule still binds you. It does **not** replace §4 step 4 (confirming authenticated UI in the snapshot) — that needs judgment on the live page.
-
-1. **Existence/shape** — `.auth/session.json` parses as a JSON object; `origins` present as an **array** whose entries have a string `origin` and, if present, an array `localStorage`; `cookies` present as an array; `.auth/session.init.js` exists. These are `validateSessionState()`'s rules (shape reference: §5), plus two the gate adds on top: `sessionStorage` must be **present** as an object — the validator treats it as optional, but global setup always writes it, so its absence means the file didn't come from global setup; and the localStorage/sessionStorage inlined in `session.init.js` must match `session.json` key for key — both come from one capture, so a mismatch means a half-written or hand-edited pair.
-2. **Cookie expiry (authoritative)** — every cookie's `expires` is `-1` or a future Unix timestamp. Mirrors `findExpiredCookies()` in [session-state.js](session-state.js). For `browser_navigate` to an `http(s)` URL, the target host must also be covered by a cookie domain or an `origins[]` entry — otherwise the page loads logged out no matter how fresh the session is.
-3. **Freshness (heuristic)** — mtime of both `.auth/session.json` and `.auth/session.init.js` must be **≤ 1 hour old**; otherwise fail the gate even if 1–2 pass. The hook reports each file's age in its denial — don't stat or read `.auth/` yourself. Why on top of expiry: cookies can look valid while the session is dead server-side (revoked token, IdP timeout, backend restart, or IndexedDB-held auth — not captured at all, §5). Age is the only local proxy. Bound is deliberately tight: a false block costs one `test:debug` run; a false pass costs confidently-wrong locators read off a login page.
-4. **All pass** → §4. **Any fail** → stop, report which check failed (missing file / bad shape / expired cookie name+`expires` / mtime age), state the session must be re-created by logging in again, give the exact command **`npm run test:debug`** (or `test:parallel:*` — each wipes `.auth/` and logs in fresh, §5), then wait. Never create/repair/hand-write the artifacts yourself, and don't assume the session is probably fine.
-
-Why existence alone isn't enough: a hand-written file with singular `origin` / object-shaped `localStorage` still parses (Playwright ignores unknown keys), but `--storage-state` **silently no-ops** on a non-native file — logged-out browser, no error, and every selector/role/name you then verify will be confidently wrong.
-
-The hook re-runs checks 1–3 on every browser call, so a session that goes stale mid-task is caught at the next call, and its denial lists what failed. Don't read `session.json` to check it yourself — the hook already does, and the file holds live session tokens (§5). `.auth/` only refreshes when the user runs the suite, never by your own action.
+1. **Existence/shape** — both `.auth/` files exist, native shape (§5), `sessionStorage` present, init script matches `session.json`.
+2. **Cookie expiry** — no expired cookie; a navigated host must be covered by a cookie domain or `origins[]` entry.
+3. **Freshness** — both files ≤ 1 hour old.
+4. **Any fail** → stop, relay the denial's reasons, and give **`npm run test:debug`** (wipes `.auth/` and logs in fresh). Never create or repair the artifacts yourself.
 
 ---
 
@@ -90,27 +58,23 @@ The hook re-runs checks 1–3 on every browser call, so a session that goes stal
 
 Applies to anything in [steps/](steps/).
 
-**N6 in practice:** only add new step definitions for steps that don't exist yet. Never modify, "fix", or refactor an existing step definition already in any file under [steps/](steps/) — even if it looks wrong, stale, or improvable. If an existing step seems broken, report it to the user instead of changing it.
-
-**The one exception — `TODO` stubs:** a step whose body is empty apart from a `// TODO` comment is a placeholder, not an implementation — and re-adding it elsewhere would be a duplicate-definition error, so N6 would otherwise make it impossible to implement. Ask the user first; once they agree, fill in the body per steps 1–9 below, keeping the step text and parameter list exactly as they are. A stub passes vacuously, so until it's filled in, tell the user that any scenario using it isn't really checking that line.
-
-**Enforcement:** [check-step-edits.cjs](.claude/hooks/check-step-edits.cjs) applies each `Edit`/`Write`/`MultiEdit` to a `steps/**/*.js` file in memory and compares every `Given`/`When`/`Then`/`Step` registration before and after. It **denies** removing, renaming or changing an existing step (whitespace, quote style and trailing commas aside — comments inside a step count as a change), and adding a step whose text this or another `steps/` file already defines. It **asks** the user when the only change is filling in a `TODO` stub with its text and parameters untouched, and when it can't parse the file. Steps inside comments are ignored. Shell writes to `steps/` aren't inspected; N6 still applies. Fails closed.
+**N6:** if an existing step looks broken, report it. **`TODO` stub exception:** a `// TODO`-only body may be filled in once the user agrees, keeping its text and parameters — until then, tell the user scenarios using it aren't checking that line.
 
 **Where steps live:** search **all** of [steps/](steps/) for the step text before writing anything — playwright-bdd loads every `steps/**/*.js`, and two files defining the same step text is a duplicate-definition error, not an override. Add a genuinely new step to the existing file that covers the same area; start a new `steps/<area>.steps.js` only for a new area, and match the `createBdd()` setup the other files use.
 
 **N3 in practice:** never write a locator/role/name/URL/title from memory, the feature file's wording, or how the page "should" look — confirm live first. A plausible-looking locator still parses and runs; it just fails (or silently matches the wrong element) the first time the real page differs, and that's invisible until the user runs the suite.
 
-1. The §3 gate runs automatically on your first `browser_*` call (hook). If it denies, stop and hand off per §3 step 4.
+1. The §3 gate runs automatically.
 2. Load tools — `mcp__playwright__*` are deferred until schemas are fetched. Call `ToolSearch` (a tool call, not shell) with:
    `select:mcp__playwright__browser_navigate,mcp__playwright__browser_snapshot,mcp__playwright__browser_click,mcp__playwright__browser_evaluate,mcp__playwright__browser_close`
    plus any other `browser_*` names needed.
-3. `browser_navigate` to the page. Cookies, localStorage, and sessionStorage are already injected via `--storage-state` + `--init-script` (§5) — make no manual storage calls even though `browser_sessionstorage_set`-style tools exist under `--caps=storage`; that capability is not enabled here (§7), and hand-setting storage would fight the init-script injection.
+3. `browser_navigate` to the page. Storage is already injected — make no manual storage calls (§7).
 4. Confirm authenticated UI in the snapshot before trusting anything on the page. Login page → stop per §3; don't read locators off it.
 5. `browser_snapshot` for real refs/roles/names. Perform the interaction, snapshot again to confirm the resulting title/URL/state.
 6. **Verify every XPath you'll write** with `browser_evaluate` (`document.evaluate`) — a snapshot shows roles and names, not the classes/attributes an XPath depends on. Run the exact expression with a real parameter value substituted and check the match count: exactly 1 for a single element, the expected number for a list; 0 means it's wrong.
 7. `browser_close`.
 8. Write the step using only values confirmed in steps 3–6.
-9. Hand off (§2): state what was confirmed by snapshot/evaluate and what's unverified, and give the exact command to run the scenario — `npm run test:debug -- <path to the .feature file>`. Never run it yourself; claim no result you haven't seen (N5).
+9. Hand off per §2 with `npm run test:debug -- <path to .feature>`.
 
 ---
 
@@ -142,16 +106,14 @@ The test step reads the file through `readSessionState()` ([session-state.js](se
 }
 ```
 
-**sessionStorage workaround:** Playwright's `storageState` doesn't persist session storage (only cookies, localStorage, opt-in IndexedDB, passkeys), so this repo hand-rolls it: `page.addInitScript()` for the test step, the generated init script for MCP. `--caps=storage` tools (`browser_sessionstorage_*` etc.) exist but aren't enabled (§7) — `--init-script` already auto-seeds on every page load.
+**sessionStorage workaround:** Playwright's `storageState` doesn't persist session storage (only cookies, localStorage, opt-in IndexedDB, passkeys), so this repo hand-rolls it: `page.addInitScript()` for the test step, the generated init script for MCP.
 
 **Other facts:**
 
-- **No session reuse** — `global-setup.js` deletes `.auth/` unconditionally first, then logs in fresh every run (including `test:debug`), so a stale/expired/half-written pair can never leak into a run.
-- The login in `global-setup.js` is a real flow: it signs in to the application in a Firefox window — headless unless `LOGIN_HEADLESS=false` (the tests themselves run in Chromium).
-- Fresh login happens by **running the suite** (`test:debug`, `test:parallel:*`), never by manually deleting `.auth/` — don't tell the user to do that.
+- **No session reuse** — every run (including `test:debug`) wipes `.auth/` and logs in fresh, so a stale or half-written pair never leaks into a run. That is the only way to refresh it; never tell the user to delete `.auth/` by hand.
 - **IndexedDB not captured** (`storageState({ indexedDB: true })` isn't called) — a token stored there makes the session look valid but be incomplete.
 - `session.init.js` holds **real session values as plaintext JS**. `.auth/` is gitignored — keep it that way; never paste its contents into logs/issues/commits/chat.
-- **Invariant:** both consumers must end up with all three state pieces. Changing what `global-setup.js` writes requires updating `validateSessionState()`, `writeInitScript()`, and both readers together. The §3 gate hook imports `validateSessionState()` and `findExpiredCookies()`, so it follows automatically; only its extra checks (sessionStorage present, init script present, freshness) live in [.claude/hooks/check-session-gate.cjs](.claude/hooks/check-session-gate.cjs).
+- **Invariant:** both consumers must end up with all three state pieces. Changing what `global-setup.js` writes requires updating `validateSessionState()`, `writeInitScript()`, and both readers together. The gate's extra checks (sessionStorage present, init script present, freshness) live in [.claude/hooks/check-session-gate.cjs](.claude/hooks/check-session-gate.cjs).
 
 ---
 
@@ -165,7 +127,6 @@ Match existing style in the step files already under [steps/](steps/).
 - **Scope before assert**: narrow to a container first with a scoped xpath. ✅ `page.locator("xpath=//nav[@aria-label='Docs sidebar']//a[text()='Docs']")`
 - **Lists go in a data table**: take the table as the last argument and iterate `table.hashes()`, with an UPPERCASE header column.
 - **Quote-safe XPath**: a parameter pasted raw inside `'…'` in an XPath breaks on any value containing an apostrophe. In new steps, build the literal so it survives one — plain quotes when the value has none, XPath `concat()` when it does.
-- **Web-first assertions only**: `toBeVisible`, `toHaveTitle`, `toHaveURL`. ❌ `waitForTimeout`/`setTimeout`/manual sleep. Don't add new `waitForLoadState('networkidle')` either — existing code may use it, but Playwright discourages it (slow, and flaky on pages that keep polling); assert on the element you need instead.
 - **ESM imports**; Node builtins as `node:fs`/`node:path`.
 - **Declarative, reusable step text** — values (names, labels, search terms) come in as `{string}` parameters, never hard-coded in the step text; specifics live in the feature file.
 
@@ -173,7 +134,7 @@ Match existing style in the step files already under [steps/](steps/).
 
 - **Logged-in scenarios start with** `Given I inject session state from file` — normally in the `Background`, before any navigation. Leaving it out gives a logged-out run (§8).
 - **One `Feature` per file**, named after its test ID, with a matching tag on the scenario.
-- **Reuse existing step text verbatim.** Any wording change — even punctuation or quotes — no longer matches the existing definition, so it needs a new one (§4). Search [steps/](steps/) for the phrase before writing a new line.
+- **Reuse existing step text verbatim.** Any wording change — even punctuation or quotes — needs a new definition (§4).
 - **Name the feature and scenario after the behaviour they check**, not a placeholder.
 
 ---
@@ -204,26 +165,17 @@ Match existing style in the step files already under [steps/](steps/).
 | `--init-script=.auth/session.init.js` | Runs before every page's own scripts; carries localStorage + sessionStorage, closing the `--storage-state` gap. |
 | `--isolated`                          | Fresh in-memory profile per session, seeded by `--storage-state`, discarded on close.                           |
 
-The server's name (`playwright`) is load-bearing: tool names become `mcp__<name>__browser_*`, and the §3 gate matcher in [.claude/settings.json](.claude/settings.json) is `mcp__playwright__browser_.*`. Renaming the server — or adding a second Playwright MCP server — means updating that matcher in the same change, or the gate silently stops applying. `npm run hooks:test` fails if any Playwright MCP server in `.mcp.json` isn't gated.
-
-⚠️ **Do not add `--caps=storage`.** It's a real flag and would add `browser_cookie_*`/`browser_localstorage_*`/`browser_sessionstorage_*`/`browser_storage_state` tools, but this repo already auto-seeds sessionStorage on every page via `--init-script` (§5); adding manual get/set tools on top risks calls happening out of step with that injection, reintroducing the drift `global-setup.js` prevents. Need ad-hoc storage inspection? Use `browser_evaluate` instead.
+The §3 gate matcher (`mcp__playwright__browser_.*`) must cover every Playwright MCP server, and `--caps=storage` stays off — `--init-script` already seeds storage; inspect it with `browser_evaluate`. `npm run hooks:test` checks both.
 
 ---
 
 ## 8. Failure modes
 
-| Symptom                                                         | Likely cause                                                                  | Fix                                                                                                                                                 |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| MCP browser shows a login page                                  | `.auth/session.json` missing, expired, stale, or non-native shape             | §3 — stop; tell user to re-login via `npm run test:debug`                                                                                           |
-| Cookies restore but localStorage doesn't                        | Singular `origin` / object-shaped `localStorage`; Playwright ignores both     | §5 — regenerate via global setup                                                                                                                    |
-| App loads but behaves as anonymous                              | `.auth/session.init.js` missing/stale                                         | §3 — stop; re-login via `npm run test:debug`                                                                                                        |
-| `Tool not found: mcp__playwright__…`                            | Schemas never fetched, or tool needs `--caps=storage` (not enabled)           | §4 step 2 — `ToolSearch`; a missing storage/network/vision/pdf/devtools/testing/config tool means the capability flag isn't enabled here on purpose |
-| Feature file edits have no effect                               | Stale `.features-gen/` — regenerates only when user runs the suite            | Ask user to re-run; never edit `.features-gen/`                                                                                                     |
-| Step passes in MCP, fails in the run                            | Verified while logged out, or scenario missing session-injection `Given`      | Re-verify per §4; confirm scenario injects session state                                                                                            |
-| Flaky visibility assertion                                      | Ambiguous locator matching several nodes                                      | Scope the XPath to a container; use exact `text()='…'` instead of `contains()`; avoid blind `.first()` / `[1]`                                      |
-| Browser call denied: `Blocked by CLAUDE.md §3 (N2)`             | A §3 check failed (the denial lists which), or the gate hook couldn't start   | Stop; relay the reasons; ask the user to run `npm run test:debug` (or to fix the hook, if it couldn't start)                                        |
-| Shell command denied: `Blocked by CLAUDE.md §2 (N1)`            | The command would run the suite, `bddgen`, or global setup                    | Hand off per §2 — never reword the command                                                                                                          |
-| File edit or shell write denied: `Blocked by CLAUDE.md §1 (N4)` | The target is generated output                                                | Change the source (`.feature`, `steps/`, `package.json`) or ask the user to re-run the suite                                                        |
-| User is prompted: `CLAUDE.md §1: … part of the harness`         | The edit or shell write targets `.claude/`, `session-state.js` or `.mcp.json` | Expected only when the user asked for a harness change; otherwise withdraw the change                                                               |
-| Step edit denied: `Blocked by CLAUDE.md §4 (N6)`                | The change modifies, removes or renames an existing step, or duplicates one   | Add a new step with new text instead; report a broken step to the user (§4)                                                                         |
-| Denied: `the <name> hook failed` / `could not start`            | A hook crashed or couldn't load — it fails closed                             | Stop and tell the user; `npm run hooks:test` shows what broke. Don't try to work around the hook                                                    |
+| Symptom                                                | Likely cause                                                             | Fix                                                                                                                                                 |
+| ------------------------------------------------------ | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MCP browser shows a login page or behaves as anonymous | `.auth/` missing, expired, stale, or non-native shape                    | §3 — stop; tell user to re-login via `npm run test:debug`                                                                                           |
+| `Tool not found: mcp__playwright__…`                   | Schemas never fetched, or tool needs `--caps=storage` (not enabled)      | §4 step 2 — `ToolSearch`; a missing storage/network/vision/pdf/devtools/testing/config tool means the capability flag isn't enabled here on purpose |
+| Feature file edits have no effect                      | Stale `.features-gen/` — regenerates only when user runs the suite       | Ask user to re-run; never edit `.features-gen/`                                                                                                     |
+| Step passes in MCP, fails in the run                   | Verified while logged out, or scenario missing session-injection `Given` | Re-verify per §4; confirm scenario injects session state                                                                                            |
+| Flaky visibility assertion                             | Ambiguous locator matching several nodes                                 | Scope the XPath to a container; use exact `text()='…'` instead of `contains()`; avoid blind `.first()` / `[1]`                                      |
+| Any hook denial or prompt                              | A rule fired — the message names the rule and the fix                    | Follow the message; hand off per §2; an unrequested harness-edit prompt means withdraw the change                                                   |

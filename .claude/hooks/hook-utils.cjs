@@ -99,6 +99,28 @@ function audit(entry) {
 }
 
 /**
+ * A short, secret-free description of what a hook looked at, for allow lines:
+ * the project-relative file, the (truncated, redacted) shell command, or the URL.
+ */
+function describeCall(input) {
+  const ti = input && typeof input.tool_input === 'object' && input.tool_input ? input.tool_input : {};
+  const str = v => (typeof v === 'string' && v !== '' ? v : null);
+  const file = str(ti.file_path) || str(ti.path) || str(ti.notebook_path);
+  if (file) return `file: ${relToProject(file) ?? file}`;
+  const cmd = str(ti.command);
+  if (cmd) {
+    const redacted = cmd
+      .replace(/\s+/g, ' ')
+      .replace(/((?:token|secret|password|passwd|cookie|authorization|api[-_]?key)\S*\s*[=:]\s*)\S+/gi, '$1***')
+      .replace(/(Bearer\s+)\S+/gi, '$1***');
+    return `command: ${redacted.length > 160 ? `${redacted.slice(0, 160)}…` : redacted}`;
+  }
+  const url = str(ti.url);
+  if (url) return `url: ${url.split(/[?#]/)[0]}`;
+  return 'no violation';
+}
+
+/**
  * Runs a hook's `main(input, { deny, ask })` and fails closed: an unreadable
  * input or any error - sync, async or uncaught - ends in a JSON deny on stdout
  * with exit 0. (Claude Code treats a crashing hook as non-blocking, and not
@@ -158,6 +180,10 @@ function runHook({ name, rule, main }) {
         ask: (reason, detail) => respond('ask', reason, detail),
       }),
     )
+    .then(() => {
+      // main returned without deny/ask: the call is allowed. Log it, but print nothing.
+      if (!responded) audit({ hook: name, tool, rule, decision: 'allow', detail: describeCall(input) });
+    })
     .catch(failClosed);
 }
 

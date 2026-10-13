@@ -94,6 +94,23 @@ test('check-shell-writes: denies generated paths, asks for the harness', () => {
   }
 });
 
+test('check-shell-reads: denies reads of generated paths, allows listings and other files', () => {
+  const dir = makeProject();
+  for (const [expected, commands] of Object.entries(fixtures.shellReads)) {
+    for (const command of commands) {
+      for (const tool of ['Bash', 'PowerShell']) {
+        expectDecision(
+          dir,
+          'check-shell-reads.cjs',
+          { tool_name: tool, tool_input: { command } },
+          expected,
+          `${tool}: ${command}`,
+        );
+      }
+    }
+  }
+});
+
 test('check-generated-files: denies generated paths, asks for the harness', () => {
   const dir = makeProject();
   for (const [expected, files] of Object.entries(fixtures.fileEdits)) {
@@ -283,6 +300,7 @@ test('every hook fails closed on unreadable input', () => {
   for (const script of [
     'check-no-suite-run.cjs',
     'check-shell-writes.cjs',
+    'check-shell-reads.cjs',
     'check-generated-files.cjs',
     'check-step-edits.cjs',
     'check-session-gate.cjs',
@@ -335,15 +353,13 @@ function hooksFor(toolName) {
 }
 
 test('settings.json wires every hook to its tools, failing closed if it cannot load', () => {
-  assert.deepEqual(hooksFor('Bash').sort(), ['check-no-suite-run.cjs', 'check-shell-writes.cjs']);
-  assert.deepEqual(hooksFor('PowerShell').sort(), [
-    'check-no-suite-run.cjs',
-    'check-shell-writes.cjs',
-  ]);
-  assert.deepEqual(hooksFor('Monitor').sort(), [
-    'check-no-suite-run.cjs',
-    'check-shell-writes.cjs',
-  ]);
+  for (const tool of ['Bash', 'PowerShell', 'Monitor']) {
+    assert.deepEqual(
+      hooksFor(tool).sort(),
+      ['check-no-suite-run.cjs', 'check-shell-reads.cjs', 'check-shell-writes.cjs'],
+      tool,
+    );
+  }
   for (const tool of ['Edit', 'Write', 'MultiEdit']) {
     assert.deepEqual(
       hooksFor(tool).sort(),
@@ -373,5 +389,23 @@ test('the §3 gate matcher covers every Playwright MCP server in .mcp.json', () 
       ['check-session-gate.cjs'],
       `server "${name}" is not gated - update the matcher in .claude/settings.json`,
     );
+  }
+});
+
+test('no Playwright MCP server in .mcp.json enables --caps=storage', () => {
+  const mcp = JSON.parse(fs.readFileSync(path.join(REPO_DIR, '.mcp.json'), 'utf-8'));
+  for (const [name, server] of Object.entries(mcp.mcpServers)) {
+    const args = server.args ?? [];
+    args.forEach((a, i) => {
+      if (!/^--caps(=|$)/.test(a)) return;
+      const value = a.includes('=') ? a.slice(a.indexOf('=') + 1) : (args[i + 1] ?? '');
+      assert.ok(
+        !value
+          .split(',')
+          .map(c => c.trim())
+          .includes('storage'),
+        `server "${name}" enables --caps=storage - CLAUDE.md §7: --init-script already seeds storage`,
+      );
+    });
   }
 });

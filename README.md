@@ -1,15 +1,9 @@
-
-
-Playwright + Gherkin (BDD) test framework (`playwright-bdd`, ESM) with Claude Code guardrails.
-
 ## ✨ Capabilities
 
 - 🥒 **Gherkin scenarios** — test cases in `Given / When / Then` under [features/](features/), run by the Playwright test runner
-- 🧭 **XPath-only locators** — step definitions scope to a container, then assert with web-first assertions; list inputs come in as data tables and XPath literals are apostrophe-safe
 - 🔐 **One login per run** — [global-setup.js](global-setup.js) captures the session once and every scenario replays it ([Session state](#-session-state))
-- 📊 **Reporting** — HTML report in `playwright-report/`, JSON results in `test-results/results.json`, traces collected for every test
-- 🔁 **Parallel runs** — the `test:parallel:*` scripts use 3 workers (config default is 2); one retry locally, two on CI
-- 🐢 **Slow-motion by default** — 1 s `slowMo` between actions (see [playwright.config.js](playwright.config.js)); lower it for faster runs
+- 📊 **Reporting** — HTML report in `playwright-report/`, JSON results in `test-results/results.json`
+- 🔁 **Parallel runs** — fully parallel test files; the `test:parallel:*` scripts use 3 workers, and a failed test is retried once (twice on CI) with a trace recorded
 - 🤖 **Claude Code, with guardrails** — Claude drafts steps against the live app through the Playwright MCP browser, and hooks stop it from breaking the project's rules ([Working with Claude Code](#-working-with-claude-code))
 - 🧩 **Editor setup** — [.vscode/settings.json](.vscode/settings.json) wires up Specwright and Prettier format-on-save
 
@@ -24,12 +18,14 @@ Playwright + Gherkin (BDD) test framework (`playwright-bdd`, ESM) with Claude Co
 ├── .mcp.json             🤖 Playwright MCP server for Claude's browser
 ├── CLAUDE.md             🤖 Instructions Claude Code reads every session
 ├── .claude/settings.json 🛡️ The harness: hooks that enforce CLAUDE.md's key rules
-├── .claude/hooks/        🛡️ The hook scripts
+├── .claude/hooks/        🛡️ The hook scripts, and their self-tests in test/
+├── docs/                 📖 workflow.png visual guide, and workflow.html, its source
+├── .env                  🔧 Local settings such as LOGIN_HEADLESS (gitignored)
 ├── .prettierrc.json      🎨 Prettier config, including the Gherkin plugin
 └── .vscode/settings.json 🧩 Specwright paths + Prettier format-on-save
 ```
 
-Generated — gitignored, never hand-edit: `.auth/` (the captured session), `.features-gen/`, `test-results/`, `playwright-report/`, `.playwright-mcp/`.
+Generated — never hand-edit: `.auth/` (the captured session), `.features-gen/`, `test-results/`, `playwright-report/`, `blob-report/`, `.playwright-mcp/`, `node_modules/`, `package-lock.json` and `.claude/hooks/hook.log`. All but `package-lock.json` are gitignored. Claude Code can't edit or read any of them (see [below](#-working-with-claude-code)).
 
 ## 🚀 Getting started
 
@@ -42,23 +38,23 @@ npx playwright install     # browser binaries: Chromium runs the tests, Firefox 
 
 ## ▶️ Running tests
 
-| Command                                            | Description                                                                       |
-| -------------------------------------------------- | ----------------------------------------------------------------------------------|
-| `npm run bddgen`                                   | ⚙️ Generate BDD spec files from `.feature` files into `.features-gen/`           |
-| `npm run clean`                                    | 🧹 Delete `.features-gen/` (every test script does this first)                   |
-| `npm run test:parallel:headed`                     | 🖼️ Clean, **generate**, and run with 3 workers, browser visible (`--headed`)     |
-| `**npm run test:parallel:headless**`               | 🤖 Clean, **generate**, and run with 3 workers, no browser UI                    |
-| `npm run test:debug`                               | 🐞 Clean, **generate**, and run in the Playwright Inspector (headed, one worker) |
-| `**npm run test:debug -- --grep "@tag"**           | 🐞 For a single tagged test scenario                                             |
-| `npm run report`                                   | 📊 Open the last Playwright HTML report                                          |
-| `npm run format` / `npm run format:check`          | 🎨 Format with Prettier / only check formatting                                  |
-| `npm run hooks:test`                               | 🛡️ Run the self-tests for the Claude Code hooks                                  |
+| Command                                   | Description                                                                  |
+| ----------------------------------------- | ---------------------------------------------------------------------------- |
+| `npm run bddgen`                          | ⚙️ Generate BDD spec files from `.feature` files into `.features-gen/`       |
+| `npm run clean`                           | 🧹 Delete `.features-gen/` (every test script does this first)               |
+| `npm run test:parallel:headed`            | 🖼️ Clean, generate, and run with 3 workers, browser visible (`--headed`)     |
+| `npm run test:parallel:headless`          | 🤖 Clean, generate, and run with 3 workers, no browser UI                    |
+| `npm run test:debug`                      | 🐞 Clean, generate, and run in the Playwright Inspector (headed, one worker) |
+| `npm run test:debug -- --grep "@tag"`     | 🐞 Same, for a single test scenario                                          |
+| `npm run report`                          | 📊 Open the last Playwright HTML report                                      |
+| `npm run format` / `npm run format:check` | 🎨 Format with Prettier / only check formatting                              |
+| `npm run hooks:test`                      | 🛡️ Self-test the Claude Code hooks (never runs the suite)                    |
 
 Every test run starts with global setup: Firefox (headless by default; set `LOGIN_HEADLESS=false` in `.env` to see it) logs in and writes a fresh `.auth/` (see [Session state](#-session-state)).
 
 ## 🖊️ Writing a new scenario
 
-1. Add a `Scenario` to a `.feature` file in [features/](features/). To run it logged in, start with `Given I inject session state from file`, as the `Background` in [features/TEST-XXX1.feature](features/TEST-XXX1.feature) does
+1. Add a `Scenario` to a `.feature` file in [features/](features/). To run it logged in, start with `Given I inject session state from file`, as the `Background`. Use one `Feature` per file, named after its test ID, with a matching tag on the scenario.
 2. Add any missing steps in [steps/](steps/) using `createBdd()` from `playwright-bdd` — or ask Claude Code to draft them ([below](#-working-with-claude-code))
 3. Run `npm run test:parallel:headed` (or `test:parallel:headless`); `bddgen` generates the Playwright spec files from your Gherkin first
 
@@ -80,13 +76,13 @@ Two files are needed because Playwright's `storageState` can't carry `sessionSto
 - 🚫 **Never hand-edit `.auth/`.** Every run wipes it and logs in fresh (including `test:debug`), so re-running the suite is how you replace an expired session.
 - 📇 **IndexedDB isn't captured** (that needs `storageState({ indexedDB: true })`). If your app keeps its token there, the session will be incomplete.
 - 🔑 **`session.init.js` holds real session values in plaintext.** `.auth/` is gitignored — keep it that way.
-- 🔨 **The login targets one specific application** (Firefox, headless unless `LOGIN_HEADLESS=false`, in [global-setup.js](global-setup.js)); the `Load default page` step uses the same host. Replace both to point the suite at your own app.
+- 🔨 **The login targets the site** (Firefox, headless unless `LOGIN_HEADLESS=false`, in [global-setup.js](global-setup.js)); replace that flow to point the suite at your own app.
 
 ## 🤖 Working with Claude Code
 
 Two layers keep Claude in line:
 
-- **[CLAUDE.md](CLAUDE.md) is instructions.** Claude Code reads it at the start of every session, but nothing enforces it — Claude follows it by choice.
+- **[CLAUDE.md](CLAUDE.md) is instructions.** Claude Code reads it at the start of every session.
 - **The harness is enforcement.** `PreToolUse` hooks in [.claude/settings.json](.claude/settings.json) run on every matching tool call and block the ones that break a rule, whether or not Claude remembers it.
 
 What the hooks cover (details in [CLAUDE.md](CLAUDE.md) §0):
@@ -94,10 +90,15 @@ What the hooks cover (details in [CLAUDE.md](CLAUDE.md) §0):
 - 🚫 **No suite runs** (N1): blocks `playwright test`, `bddgen`, global setup and npm scripts that wrap them, including through a script file.
 - 🔐 **Session gate** (N2): blocks Playwright MCP browser calls unless `.auth/` is valid, consistent, unexpired and under an hour old.
 - 🧱 **No hand-edits to generated output** (N4): file tools and common shell writes.
+- 👀 **No reads of generated output**: `permissions.deny` in [.claude/settings.json](.claude/settings.json) for file tools, plus a shell-read guard (`cat`, `Get-Content`, `grep`, …). `.auth/` holds live session tokens. Listing folder names is still allowed.
 - 🧩 **No changes to existing step definitions** (N6): only new steps are allowed, and filling a `TODO` stub prompts you first.
 - 🛡️ **Harness changes prompt you**: edits to `.claude/`, `session-state.js` or `.mcp.json` need your approval.
 
-Hooks fail closed: if one breaks, the call is blocked rather than let through. Denials and prompts are logged to `.claude/hooks/hook.log` (gitignored). After changing a hook, run `npm run hooks:test`.
+N3 (confirm every locator on the live page) and N5 (no "it works" without a real run) have no hook. They rely on Claude following CLAUDE.md.
+
+Hooks fail closed: if one breaks, the call is blocked rather than let through. They catch the ordinary ways of running commands and reading or writing files, not deliberate tricks, and they only run inside Claude Code, so your own terminal is never blocked. Every decision (allow, prompt, deny) is logged to `.claude/hooks/hook.log` (gitignored, with no secrets).
+
+`npm run hooks:test` runs the hooks' self-tests. It also checks that [.claude/settings.json](.claude/settings.json) wires every hook to its tools, that the session gate covers every Playwright MCP server in [.mcp.json](.mcp.json), and that `--caps=storage` stays off. Run it after changing a hook, `.claude/settings.json` or `.mcp.json`.
 
 ![alt text](image.png)
 

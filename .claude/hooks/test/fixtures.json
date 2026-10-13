@@ -89,6 +89,35 @@
       "cat .claude/settings.json"
     ]
   },
+  "shellReads": {
+    "deny": [
+      "cat .auth/session.json",
+      "head -n 5 .auth/session.init.js",
+      "stat .auth/session.json",
+      "Get-Content -Path .auth/session.json",
+      "type .auth/session.init.js",
+      "grep sid .auth/session.json",
+      "rg -e sid .auth/session.json",
+      "jq .cookies < .auth/session.json",
+      "cp .auth/session.json /tmp/s.json",
+      "bash -c \"cat .auth/*\"",
+      "node -e \"console.log(require('fs').readFileSync('.auth/session.json','utf8'))\"",
+      "cat .features-gen/features/a.feature.spec.js",
+      "tail test-results/x/error-context.md",
+      "cat foo/.playwright-mcp/page.yml",
+      "cat .claude/hooks/hook.log"
+    ],
+    "allow": [
+      "ls .auth",
+      "ls -la .features-gen",
+      "find test-results -name x",
+      "grep .auth CLAUDE.md",
+      "cat package.json",
+      "cp README.md .auth-notes.md",
+      "node -e \"console.log(require('fs').readFileSync('package.json','utf8'))\"",
+      "git status && git diff 2>&1"
+    ]
+  },
   "fileEdits": {
     "deny": [
       ".auth/session.json",

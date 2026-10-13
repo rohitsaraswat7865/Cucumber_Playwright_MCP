@@ -1,4 +1,17 @@
 {
+  "permissions": {
+    "deny": [
+      "Read(.auth/**)",
+      "Read(**/.features-gen/**)",
+      "Read(**/test-results/**)",
+      "Read(**/playwright-report/**)",
+      "Read(**/blob-report/**)",
+      "Read(**/node_modules/**)",
+      "Read(**/.playwright-mcp/**)",
+      "Read(package-lock.json)",
+      "Read(.claude/hooks/hook.log*)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -23,6 +36,11 @@
             "type": "command",
             "command": "node -e \"try{require(require('path').join(process.env.CLAUDE_PROJECT_DIR||'.','.claude','hooks','check-shell-writes.cjs'))}catch(e){process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'PreToolUse',permissionDecision:'deny',permissionDecisionReason:'Blocked by CLAUDE.md \\u00a71 (N4): the shell-write guard could not start, so the call is blocked - tell the user. '+e.message}}))}\"",
             "statusMessage": "Checking the command doesn't write generated or harness files (CLAUDE.md §1, N4)"
+          },
+          {
+            "type": "command",
+            "command": "node -e \"try{require(require('path').join(process.env.CLAUDE_PROJECT_DIR||'.','.claude','hooks','check-shell-reads.cjs'))}catch(e){process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'PreToolUse',permissionDecision:'deny',permissionDecisionReason:'Blocked by CLAUDE.md \\u00a71: the shell-read guard could not start, so the call is blocked - tell the user. '+e.message}}))}\"",
+            "statusMessage": "Checking the command doesn't read generated files (CLAUDE.md §1)"
           }
         ]
       },

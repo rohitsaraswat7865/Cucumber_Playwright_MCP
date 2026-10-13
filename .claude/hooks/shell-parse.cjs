@@ -1,5 +1,5 @@
 // Shell command-line parsing shared by the shell-tool hooks
-// (check-no-suite-run.cjs, check-shell-writes.cjs). Best-effort by design: it
+// (check-no-suite-run.cjs, check-shell-writes.cjs, check-shell-reads.cjs). Best-effort by design: it
 // understands the ordinary ways commands are written in bash and PowerShell,
 // not deliberate obfuscation.
 'use strict';
