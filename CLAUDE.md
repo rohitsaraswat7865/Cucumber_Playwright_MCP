@@ -66,9 +66,7 @@ Applies to anything in [steps/](steps/).
 **N3 in practice:** never write a locator/role/name/URL/title from memory, the feature file's wording, or how the page "should" look — confirm live first. A plausible-looking locator still parses and runs; it just fails (or silently matches the wrong element) the first time the real page differs, and that's invisible until the user runs the suite.
 
 1. The §3 gate runs automatically.
-2. Load tools — `mcp__playwright__*` are deferred until schemas are fetched. Call `ToolSearch` (a tool call, not shell) with:
-   `select:mcp__playwright__browser_navigate,mcp__playwright__browser_snapshot,mcp__playwright__browser_click,mcp__playwright__browser_evaluate,mcp__playwright__browser_close`
-   plus any other `browser_*` names needed.
+2. Load tools — `mcp__playwright__*` are deferred until schemas are fetched. Call `ToolSearch` (a tool call, not shell) to fetch the current `mcp__playwright__browser_*` schemas. Use only the exact tool names returned by the connected Playwright MCP server; do not rely on a hard-coded tool list because `.mcp.json` uses `@playwright/mcp@latest`.
 3. `browser_navigate` to the page. Storage is already injected — make no manual storage calls (§7).
 4. Confirm authenticated UI in the snapshot before trusting anything on the page. Login page → stop per §3; don't read locators off it.
 5. `browser_snapshot` for real refs/roles/names. Perform the interaction, snapshot again to confirm the resulting title/URL/state.
