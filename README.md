@@ -1,3 +1,5 @@
+# mb-autotest-ai
+
 ## ✨ Capabilities
 
 - 🥒 **Gherkin scenarios** — test cases in `Given / When / Then` under [features/](features/), run by the Playwright test runner
@@ -20,7 +22,7 @@
 ├── .claude/settings.json 🛡️ The harness: hooks that enforce CLAUDE.md's key rules
 ├── .claude/hooks/        🛡️ The hook scripts, and their self-tests in test/
 ├── docs/                 📖 workflow.png visual guide, and workflow.html, its source
-├── eslint.config.js      🔍 ESLint flat config (npm run lint)
+├── eslint.config.js      🔍 ESLint flat config (npm run check:framework)
 ├── .env                  🔧 Local settings such as LOGIN_HEADLESS (gitignored)
 ├── .prettierrc.json      🎨 Prettier config, including the Gherkin plugin
 └── .vscode/settings.json 🧩 Specwright paths + Prettier format-on-save
@@ -48,9 +50,7 @@ npx playwright install     # browser binaries: Chromium runs the tests, Firefox 
 | `npm run test:debug`                      | 🐞 Clean, generate, and run in the Playwright Inspector (headed, one worker)               |
 | `npm run test:debug -- --grep "@tag"`     | 🐞 Same, for a single test scenario                                                        |
 | `npm run report`                          | 📊 Open the last Playwright HTML report                                                    |
-| `npm run format` / `npm run format:check` | 🎨 Format with Prettier / only check formatting                                            |
-| `npm run lint`                            | 🔍 Lint with ESLint                                                                        |
-| `npm run hooks:test`                      | 🛡️ Self-test the Claude Code hooks (never runs the suite)                                  |
+| `npm run check:framework`                 | 🛡️ Format, lint, and self-test the Claude Code hooks (never runs the suite)                 |
 
 Every test run starts with global setup: Firefox (headless by default; set `LOGIN_HEADLESS=false` in `.env` to see it) logs in and writes a fresh `.auth/` (see [Session state](#-session-state)).
 
@@ -102,10 +102,7 @@ N3 (confirm every locator on the live page) and N5 (no "it works" without a real
 
 Hooks fail closed: if one breaks, the call is blocked rather than let through. They catch the ordinary ways of running commands and reading or writing files, not deliberate tricks, and they only run inside Claude Code, so your own terminal is never blocked. Every decision (allow, prompt, deny) is logged to `.claude/hooks/hook.log` (gitignored, with no secrets).
 
-`npm run hooks:test` runs the hooks' self-tests. It also checks that [.claude/settings.json](.claude/settings.json) wires every hook to its tools, that every copy of the generated-path list (CLAUDE.md §1, `.gitignore`, `.prettierignore`, `permissions.deny`, `eslint.config.js`) matches, that the session gate covers every Playwright MCP server in [.mcp.json](.mcp.json), and that `--caps=storage` stays off. Run it after changing a hook, `.claude/settings.json` or `.mcp.json`.
-
-### Refer
-![alt text](image-1.png)
+`npm run check:framework` formats the project, runs ESLint, and runs the hooks' self-tests. The hook tests also check that [.claude/settings.json](.claude/settings.json) wires every hook to its tools, that every copy of the generated-path list (CLAUDE.md §1, `.gitignore`, `.prettierignore`, `permissions.deny`, `eslint.config.js`) matches, that the session gate covers every Playwright MCP server in [.mcp.json](.mcp.json), and that `--caps=storage` stays off. Run it after changing a hook, `.claude/settings.json` or `.mcp.json`.
 
 ## 🛠️ Recommended VS Code extensions
 
