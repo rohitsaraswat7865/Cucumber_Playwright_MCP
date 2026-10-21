@@ -1,5 +1,5 @@
 // Self-tests for the PreToolUse hooks in .claude/hooks/. Run with
-// `npm run hooks:test`. Each test copies the hooks into a throwaway project
+// `npm run check:framework`. Each test copies the hooks into a throwaway project
 // under the OS temp dir and feeds them hook input on stdin, exactly as Claude
 // Code does - nothing here touches the real .auth/, runs the suite or logs in.
 //

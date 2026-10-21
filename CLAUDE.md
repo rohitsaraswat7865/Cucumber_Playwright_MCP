@@ -16,7 +16,7 @@
 | **N6** | Never edit an existing step definition under [steps/](steps/) — only add new ones (`TODO`-stub exception, §4).  | 🔒 hook     | §4  |
 | **N7** | Open every session with the start menu — no other tool call before it.                                          | 🔒 hook     | §9  |
 
-🔒 = a `PreToolUse` hook in [.claude/settings.json](.claude/settings.json) denies violations; its message says why and what to do. 🧠 = rests on you. A denial is the rule working: hand off; never reword or reroute a call past a hook. Hooks catch common cases only — anything they miss is still forbidden. Hooks fail closed: if one crashes or can't start, tell the user (`npm run hooks:test` shows what broke). An approved **ask** prompt is not standing permission.
+🔒 = a `PreToolUse` hook in [.claude/settings.json](.claude/settings.json) denies violations; its message says why and what to do. 🧠 = rests on you. A denial is the rule working: hand off; never reword or reroute a call past a hook. Hooks catch common cases only — anything they miss is still forbidden. Hooks fail closed: if one crashes or can't start, tell the user (`npm run check:framework` shows what broke). An approved **ask** prompt is not standing permission.
 
 The §/N numbers are part of the interface: hook deny messages in [.claude/hooks/](.claude/hooks/) (`§1 (N4)`, `§1`, `§2 (N1)`, `§3 (N2)`, `§3.3`, `§4 (N6)`, `§9 (N7)`), §8 below, and [README.md](README.md) all cite them. Renumbering this file means updating those in the same change.
 
@@ -32,13 +32,13 @@ Playwright + Gherkin. ESM (`"type": "module"`). Tests run in Chromium only, head
 | [session-state.js](session-state.js), [.mcp.json](.mcp.json) (§7), [.claude/settings.json](.claude/settings.json), `.claude/settings.local.json`, [.claude/hooks/](.claude/hooks/) | The harness — can switch a guardrail off or grant permissions            | ⚠️ only when asked |
 | `.auth/`, `.features-gen/`, `test-results/`, `playwright-report/`, `blob-report/`, `node_modules/`, `.playwright-mcp/`, `package-lock.json`, `.claude/hooks/hook.log*`             | Generated output                                                         | ❌ never (N4)      |
 
-The ❌ list is mirrored in [hook-utils.cjs](.claude/hooks/hook-utils.cjs), the `permissions.deny` list in [.claude/settings.json](.claude/settings.json), [.gitignore](.gitignore), [.prettierignore](.prettierignore) and [eslint.config.js](eslint.config.js) — keep them in step; `npm run hooks:test` fails if they drift. Never read ❌ paths either — denied for file tools (`permissions.deny`) and shell reads ([check-shell-reads.cjs](.claude/hooks/check-shell-reads.cjs)).
+The ❌ list is mirrored in [hook-utils.cjs](.claude/hooks/hook-utils.cjs), the `permissions.deny` list in [.claude/settings.json](.claude/settings.json), [.gitignore](.gitignore), [.prettierignore](.prettierignore) and [eslint.config.js](eslint.config.js) — keep them in step; `npm run check:framework` fails if they drift. Never read ❌ paths either — denied for file tools (`permissions.deny`) and shell reads ([check-shell-reads.cjs](.claude/hooks/check-shell-reads.cjs)).
 
 ---
 
 ## 2. 🚫 STOP — never run the suite
 
-Covers `playwright test`, any `test:*` script, `bddgen`, `npm test`, `node global-setup.js`. `clean`, `report`, `format`, `format:check`, `lint`, `hooks:test` are fine.
+Covers `playwright test`, any `test:*` script, `bddgen`, `node global-setup.js`. `clean`, `report`, `check:framework` (prettier `--write` + check, eslint, hooks test) are fine.
 
 **Hand off** — tell the user (1) what you completed, (2) what's blocked + the exact command, e.g. `npm run test:debug -- <path to .feature>`, (3) what stays unverified (N5). Then wait.
 
@@ -66,7 +66,9 @@ Applies to anything in [steps/](steps/).
 **N3 in practice:** never write a locator/role/name/URL/title from memory, the feature file's wording, or how the page "should" look — confirm live first. A plausible-looking locator still parses and runs; it just fails (or silently matches the wrong element) the first time the real page differs, and that's invisible until the user runs the suite.
 
 1. The §3 gate runs automatically.
-2. Load tools — `mcp__playwright__*` are deferred until schemas are fetched. Call `ToolSearch` (a tool call, not shell) to fetch the current `mcp__playwright__browser_*` schemas. Use only the exact tool names returned by the connected Playwright MCP server; do not rely on a hard-coded tool list because `.mcp.json` uses `@playwright/mcp@latest`.
+2. Load tools — `mcp__playwright__*` are deferred until schemas are fetched. Call `ToolSearch` (a tool call, not shell) with:
+   `select:mcp__playwright__browser_navigate,mcp__playwright__browser_snapshot,mcp__playwright__browser_click,mcp__playwright__browser_evaluate,mcp__playwright__browser_close`
+   plus any other `browser_*` names needed.
 3. `browser_navigate` to the page. Storage is already injected — make no manual storage calls (§7).
 4. Confirm authenticated UI in the snapshot before trusting anything on the page. Login page → stop per §3; don't read locators off it.
 5. `browser_snapshot` for real refs/roles/names. Perform the interaction, snapshot again to confirm the resulting title/URL/state.
@@ -164,7 +166,7 @@ Match existing style in the step files already under [steps/](steps/).
 | `--init-script=.auth/session.init.js` | Runs before every page's own scripts; carries localStorage + sessionStorage, closing the `--storage-state` gap. |
 | `--isolated`                          | Fresh in-memory profile per session, seeded by `--storage-state`, discarded on close.                           |
 
-The §3 gate matcher (`mcp__playwright__browser_.*`) must cover every Playwright MCP server, and `--caps=storage` stays off — `--init-script` already seeds storage; inspect it with `browser_evaluate`. `npm run hooks:test` checks both.
+The §3 gate matcher (`mcp__playwright__browser_.*`) must cover every Playwright MCP server, and `--caps=storage` stays off — `--init-script` already seeds storage; inspect it with `browser_evaluate`. `npm run check:framework` checks both.
 
 ---
 

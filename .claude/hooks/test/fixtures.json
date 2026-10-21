@@ -44,7 +44,7 @@
     ],
     "allow": [
       "grep \"npx playwright test\" README.md",
-      "npm run format",
+      "npm run check:framework",
       "npm run clean",
       "npm run safe",
       "node tools/safe.js",

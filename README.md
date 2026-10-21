@@ -39,18 +39,16 @@ npx playwright install     # browser binaries: Chromium runs the tests, Firefox 
 
 ## ▶️ Running tests
 
-| Command                                   | Description                                                                                |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `npm run bddgen`                          | ⚙️ Generate BDD spec files from `.feature` files into `.features-gen/`                     |
-| `npm run clean`                           | 🧹 Clear `.features-gen/` and old results and reports (every test script does this first) |
-| `npm run test:parallel:headed`            | 🖼️ Clean, generate, and run with 3 workers, browser visible (`--headed`)                   |
-| `npm run test:parallel:headless`          | 🤖 Clean, generate, and run with 3 workers, no browser UI                                  |
-| `npm run test:debug`                      | 🐞 Clean, generate, and run in the Playwright Inspector (headed, one worker)               |
-| `npm run test:debug -- --grep "@tag"`     | 🐞 Same, for a single test scenario                                                        |
-| `npm run report`                          | 📊 Open the last Playwright HTML report                                                    |
-| `npm run format` / `npm run format:check` | 🎨 Format with Prettier / only check formatting                                            |
-| `npm run lint`                            | 🔍 Lint with ESLint                                                                        |
-| `npm run hooks:test`                      | 🛡️ Self-test the Claude Code hooks (never runs the suite)                                  |
+| Command                               | Description                                                                                                               |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `npm run bddgen`                      | ⚙️ Generate BDD spec files from `.feature` files into `.features-gen/`                                                    |
+| `npm run clean`                       | 🧹 Clear `.features-gen/` and old results and reports (preserving mounted directories; every test script does this first) |
+| `npm run test:parallel:headed`        | 🖼️ Clean, generate, and run with 3 workers, browser visible (`--headed`)                                                  |
+| `npm run test:parallel:headless`      | 🤖 Clean, generate, and run with 3 workers, no browser UI                                                                 |
+| `npm run test:debug`                  | 🐞 Clean, generate, and run in the Playwright Inspector (headed, one worker)                                              |
+| `npm run test:debug -- --grep "@tag"` | 🐞 Same, for a single test scenario                                                                                       |
+| `npm run report`                      | 📊 Open the last Playwright HTML report                                                                                   |
+| `npm run check:framework`             | 🛡️ Format, lint, and self-test the Claude Code hooks (never runs the suite)                                               |
 
 Every test run starts with global setup: Firefox (headless by default; set `LOGIN_HEADLESS=false` in `.env` to see it) logs in and writes a fresh `.auth/` (see [Session state](#-session-state)).
 
@@ -104,7 +102,7 @@ Hooks fail closed: if one breaks, the call is blocked rather than let through. T
 
 `npm run check:framework` formats the project, runs ESLint, and runs the hooks' self-tests. The hook tests also check that [.claude/settings.json](.claude/settings.json) wires every hook to its tools, that every copy of the generated-path list (CLAUDE.md §1, `.gitignore`, `.prettierignore`, `permissions.deny`, `eslint.config.js`) matches, that the session gate covers every Playwright MCP server in [.mcp.json](.mcp.json), and that `--caps=storage` stays off. Run it after changing a hook, `.claude/settings.json` or `.mcp.json`.
 
-![alt text](image-1.png)
+![alt text](image.png)
 
 ## 🛠️ Recommended VS Code extensions
 
