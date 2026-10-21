@@ -9,8 +9,10 @@
     "test:parallel:headed": "npm run clean && bddgen && playwright test --workers=3 --headed",
     "test:parallel:headless": "npm run clean && bddgen && playwright test --workers=3",
     "test:debug": "npm run clean && bddgen && playwright test --debug",
-    "check:framework": "prettier --write . && prettier --check . && eslint . && node --test .claude/hooks/test/hooks.test.cjs",
-    "report": "playwright show-report"
+    "report": "playwright show-report",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "hooks:test": "node --test .claude/hooks/test/hooks.test.cjs"
   },
   "engines": {
     "node": ">=20.12.0"
@@ -21,6 +23,7 @@
   "type": "module",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/mcp": "^0.0.41",
     "@playwright/test": "^1.62.1",
     "@types/node": "^26.2.0",
     "eslint": "^10.13.0",
