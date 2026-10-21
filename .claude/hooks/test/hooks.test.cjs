@@ -79,7 +79,7 @@ test('check-no-suite-run: blocks suite runs, allows everything else', () => {
 
 // ---------------------------------------------------------------- N4 (§1)
 
-test('check-shell-writes: denies generated paths, asks for the harness', () => {
+test('check-shell-writes: denies generated paths, asks for the harness and steps/', () => {
   const dir = makeProject();
   for (const [expected, commands] of Object.entries(fixtures.shellWrites)) {
     for (const command of commands) {
@@ -156,6 +156,97 @@ test('check-step-edits: only new steps and approved TODO stubs get through', () 
       c.name,
     );
   }
+});
+
+// ---------------------------------------------------------------- N7 (§9)
+
+const menu = (overrides = {}) => ({
+  tool_name: 'AskUserQuestion',
+  tool_input: {
+    questions: [
+      {
+        question: 'What would you like to do?',
+        header: 'Start',
+        multiSelect: false,
+        options: [
+          { label: 'Implement TODO steps', description: 'Fill in the TODO stubs' },
+          { label: 'Exit', description: 'Do nothing' },
+        ],
+        ...overrides,
+      },
+    ],
+  },
+});
+
+test('check-session-menu: blocks every tool until the start menu is shown', () => {
+  const dir = makeProject();
+  const session_id = `hooks-test-${process.pid}-${Date.now()}`;
+  const run = (input, expected, label) =>
+    expectDecision(dir, 'check-session-menu.cjs', { session_id, ...input }, expected, label);
+
+  run({ tool_name: 'Read', tool_input: { file_path: 'README.md' } }, 'deny', 'Read first');
+  run({ tool_name: 'ToolSearch', tool_input: { query: 'x' } }, 'deny', 'ToolSearch first');
+  run(menu({ question: 'Something else?' }), 'deny', 'a different question');
+  run(
+    menu({ options: [{ label: 'Implement TODO steps', description: '' }] }),
+    'deny',
+    'the menu missing Exit',
+  );
+  run(menu(), 'allow', 'the menu');
+  run({ tool_name: 'Read', tool_input: { file_path: 'README.md' } }, 'allow', 'Read after');
+  run({ tool_name: 'Bash', tool_input: { command: 'ls' } }, 'allow', 'Bash after');
+
+  expectDecision(
+    dir,
+    'check-session-menu.cjs',
+    { session_id: `${session_id}-other`, tool_name: 'Read', tool_input: {} },
+    'deny',
+    'another session is still locked',
+  );
+  expectDecision(
+    dir,
+    'check-session-menu.cjs',
+    { tool_name: 'Read', tool_input: {} },
+    'deny',
+    'no session_id fails closed',
+  );
+  fs.rmSync(path.join(os.tmpdir(), 'claude-session-menu', session_id), { force: true });
+});
+
+test('check-todo-steps: TODO stubs re-lock the start menu on every prompt', () => {
+  const stub = "Given('a stub', async () => {\n  // TODO\n});\n";
+  const done = "Given('done', async () => {\n  await 1;\n});\n";
+  const session_id = `hooks-todo-${process.pid}-${Date.now()}`;
+  const marker = path.join(os.tmpdir(), 'claude-session-menu', session_id);
+  const prompt = dir => {
+    const result = spawnSync(
+      process.execPath,
+      [path.join(dir, '.claude', 'hooks', 'check-todo-steps.cjs')],
+      {
+        input: JSON.stringify({ cwd: dir, session_id, prompt: 'hi' }),
+        encoding: 'utf-8',
+      },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim() === '' ? null : JSON.parse(result.stdout);
+  };
+  const unlock = () => {
+    fs.mkdirSync(path.dirname(marker), { recursive: true });
+    fs.writeFileSync(marker, '');
+  };
+
+  const clean = makeProject({ 'steps/a.steps.js': done });
+  unlock();
+  assert.equal(prompt(clean), null, 'no stubs: no output');
+  assert.ok(fs.existsSync(marker), 'no stubs: menu stays unlocked');
+
+  const todo = makeProject({ 'steps/a.steps.js': done, 'steps/b.steps.js': stub });
+  const out = prompt(todo);
+  assert.match(out.hookSpecificOutput.additionalContext, /"a stub" \(steps\/b\.steps\.js\)/);
+  assert.ok(!fs.existsSync(marker), 'stubs: marker cleared, so the menu is demanded again');
+
+  const broken = makeProject({ 'steps/c.steps.js': "Given('x', async () => {" });
+  assert.equal(prompt(broken).decision, 'block', 'unparseable steps file fails closed');
 });
 
 // ---------------------------------------------------------------- N2 (§3)
@@ -304,9 +395,38 @@ test('every hook fails closed on unreadable input', () => {
     'check-generated-files.cjs',
     'check-step-edits.cjs',
     'check-session-gate.cjs',
+    'check-session-menu.cjs',
   ]) {
     expectDecision(dir, script, '{not json', 'deny', script);
   }
+
+  // A UserPromptSubmit hook answers with decision: 'block' instead of a permission decision.
+  const result = spawnSync(
+    process.execPath,
+    [path.join(dir, '.claude', 'hooks', 'check-todo-steps.cjs')],
+    { input: '{not json', encoding: 'utf-8' },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).decision, 'block', 'check-todo-steps.cjs');
+});
+
+test('check-session-menu: prunes markers older than a week when it writes a new one', () => {
+  const dir = makeProject();
+  const markerDir = path.join(os.tmpdir(), 'claude-session-menu');
+  const stamp = `${process.pid}-${Date.now()}`;
+  const old = path.join(markerDir, `hooks-old-${stamp}`);
+  const recent = path.join(markerDir, `hooks-recent-${stamp}`);
+  fs.mkdirSync(markerDir, { recursive: true });
+  fs.writeFileSync(old, '');
+  fs.writeFileSync(recent, '');
+  const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+  fs.utimesSync(old, eightDaysAgo, eightDaysAgo);
+
+  const session_id = `hooks-new-${stamp}`;
+  expectDecision(dir, 'check-session-menu.cjs', { session_id, ...menu() }, 'allow', 'the menu');
+  assert.ok(!fs.existsSync(old), 'a week-old marker is removed');
+  assert.ok(fs.existsSync(recent), 'a recent marker is kept');
+  for (const f of [recent, path.join(markerDir, session_id)]) fs.rmSync(f, { force: true });
 });
 
 test('denials are audit-logged without secrets', () => {
@@ -346,13 +466,28 @@ function settingsHooks() {
   );
 }
 
+// The §9 start-menu guard runs on every tool; hooksFor() leaves it out so the
+// per-tool assertions below stay focused, and the wiring test checks it separately.
 function hooksFor(toolName) {
   return settingsHooks()
     .filter(h => h.matcher.test(toolName))
-    .map(h => /([\w-]+\.cjs)/.exec(h.command)?.[1]);
+    .map(h => /([\w-]+\.cjs)/.exec(h.command)?.[1])
+    .filter(name => name !== 'check-session-menu.cjs');
 }
 
 test('settings.json wires every hook to its tools, failing closed if it cannot load', () => {
+  for (const tool of [
+    'Read',
+    'AskUserQuestion',
+    'Bash',
+    'Edit',
+    'mcp__playwright__browser_snapshot',
+  ]) {
+    assert.ok(
+      settingsHooks().some(h => h.matcher.test(tool) && /check-session-menu\.cjs/.test(h.command)),
+      `check-session-menu.cjs is not wired to ${tool}`,
+    );
+  }
   for (const tool of ['Bash', 'PowerShell', 'Monitor']) {
     assert.deepEqual(
       hooksFor(tool).sort(),
@@ -375,6 +510,62 @@ test('settings.json wires every hook to its tools, failing closed if it cannot l
       `no fail-closed wrapper: ${command}`,
     );
   }
+
+  // The §9 TODO-step check runs on every prompt, not on tools.
+  const settings = JSON.parse(
+    fs.readFileSync(path.join(REPO_DIR, '.claude', 'settings.json'), 'utf-8'),
+  );
+  const promptHooks = (settings.hooks.UserPromptSubmit ?? []).flatMap(e => e.hooks);
+  assert.deepEqual(
+    promptHooks.map(h => /([\w-]+\.cjs)/.exec(h.command)?.[1]),
+    ['check-todo-steps.cjs'],
+    'UserPromptSubmit',
+  );
+  for (const { command } of promptHooks) {
+    assert.match(command, /catch\(e\)\{.*decision:'block'/, `no fail-closed wrapper: ${command}`);
+  }
+});
+
+// CLAUDE.md §1: the ❌ generated-path list is mirrored by hand in several files.
+test('every copy of the generated-path list matches hook-utils.cjs', () => {
+  const { GENERATED, HOOK_LOG } = require(path.join(HOOKS_DIR, 'hook-utils.cjs'));
+  const read = rel => fs.readFileSync(path.join(REPO_DIR, rel), 'utf-8');
+  const lines = rel =>
+    new Set(
+      read(rel)
+        .split(/\r?\n/)
+        .map(l => l.trim()),
+    );
+  // `.auth` -> `.auth/`, `package-lock.json` -> itself.
+  const entry = name => (/^[^.].*\.\w+$/.test(name) ? name : `${name}/`);
+  const names = Object.keys(GENERATED);
+  const hookLog = `${HOOK_LOG}*`;
+
+  const gitignore = lines('.gitignore');
+  const prettierignore = lines('.prettierignore');
+  const deny = JSON.parse(read('.claude/settings.json')).permissions.deny.map(r =>
+    r.replace(/^Read\((?:\*\*\/)?/, '').replace(/\*\*\)$|\)$/g, ''),
+  );
+  const claudeRow = read('CLAUDE.md')
+    .split('\n')
+    .find(l => l.includes('❌ never (N4)'));
+  const eslint = read('eslint.config.js');
+  assert.ok(claudeRow, 'CLAUDE.md §1 has no "❌ never (N4)" row');
+
+  for (const name of names) {
+    const e = entry(name);
+    // package-lock.json is generated but tracked, so git must not ignore it.
+    if (name === 'package-lock.json') assert.ok(!gitignore.has(e), `.gitignore ignores ${e}`);
+    else assert.ok(gitignore.has(e), `.gitignore is missing ${e}`);
+    assert.ok(prettierignore.has(e), `.prettierignore is missing ${e}`);
+    assert.ok(deny.includes(e), `permissions.deny in .claude/settings.json is missing ${e}`);
+    assert.ok(claudeRow.includes(`\`${e}\``), `CLAUDE.md §1 ❌ row is missing ${e}`);
+    if (e.endsWith('/')) assert.ok(eslint.includes(`'${e}'`), `eslint.config.js ignores miss ${e}`);
+  }
+  assert.ok(gitignore.has(hookLog), `.gitignore is missing ${hookLog}`);
+  assert.ok(prettierignore.has(hookLog), `.prettierignore is missing ${hookLog}`);
+  assert.ok(deny.includes(hookLog), `permissions.deny is missing ${hookLog}`);
+  assert.ok(claudeRow.includes(`\`${hookLog}\``), `CLAUDE.md §1 ❌ row is missing ${hookLog}`);
 });
 
 test('the §3 gate matcher covers every Playwright MCP server in .mcp.json', () => {
