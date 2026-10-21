@@ -6,6 +6,8 @@
 //     Set-Content/Out-File/Remove-Item/..., node -e writeFileSync(...)) -> deny
 //   - a write into the harness (.claude/settings*.json, .claude/hooks/,
 //     session-state.js, .mcp.json) -> ask, so the user approves it
+//   - a write into steps/ -> ask: check-step-edits.cjs (N6) only sees the
+//     file tools, so a shell write there can't be checked for changed steps
 //
 // Best-effort by design: it recognises the ordinary write commands, not every
 // program that can write a file. Reads are allowed. Fails closed (hook-utils.cjs).
@@ -73,6 +75,7 @@ const INLINE_CODE = new Map([
 const CODE_WRITES =
   /\b(writeFile|appendFile|rm|rmdir|unlink|rename|copyFile|cp|truncate|createWriteStream|mkdir|write_text|write_bytes|remove|rmtree|move)\w*\s*\(|\bopen\s*\([^)]*['"][wa]/;
 const REDIRECT = /^(?:\d+|&|\*)?>>?(?!&)(.*)$/;
+const STEPS_PATH = /^steps(\/|$)/i;
 
 /** Write targets in one simple command: [path, ...]. */
 function writeTargets(words, depth) {
@@ -134,12 +137,14 @@ runHook({
 
     const generated = [];
     const harness = [];
+    const steps = [];
     for (const words of parseCommands(command)) {
       for (const target of writeTargets(words, 0)) {
         const rel = relToProject(target, input.cwd);
         const hit = rel === null ? null : classifyPath(rel);
         if (hit && hit.kind === 'generated') generated.push({ rel, why: hit.why });
         if (hit && hit.kind === 'protected') harness.push({ rel, why: hit.why });
+        if (!hit && rel !== null && STEPS_PATH.test(rel)) steps.push(rel);
       }
     }
 
@@ -156,6 +161,13 @@ runHook({
         `CLAUDE.md §1: this command writes to ${rel}, part of the harness (${why}). Claude may ` +
           'change the harness only when you explicitly asked for that change - approve only if you did.',
         harness.map(h => h.rel).join(', '),
+      );
+    } else if (steps.length > 0) {
+      ask(
+        `CLAUDE.md §4 (N6): this command writes to ${steps[0]} through the shell, where the ` +
+          'step-edit guard cannot check it for changed or removed step definitions. Claude ' +
+          'should use the Edit/Write tools for steps/ - approve only if you asked for this.',
+        `steps/ shell write: ${steps.join(', ')}`,
       );
     }
   },

@@ -1,26 +1,30 @@
 {
-  "name": "test01",
+  "name": "autotest-ai",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "description": "Playwright + Gherkin (playwright-bdd) end-to-end tests with Claude Code guardrails",
   "scripts": {
     "bddgen": "bddgen",
-    "clean": "node -e \"require('fs').rmSync('.features-gen',{recursive:true,force:true})\"",
+    "clean": "node -e \"for (const d of ['.features-gen','test-results','playwright-report','blob-report']) require('fs').rmSync(d,{recursive:true,force:true})\"",
     "test:parallel:headed": "npm run clean && bddgen && playwright test --workers=3 --headed",
     "test:parallel:headless": "npm run clean && bddgen && playwright test --workers=3",
     "test:debug": "npm run clean && bddgen && playwright test --debug",
-    "report": "playwright show-report",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "hooks:test": "node --test .claude/hooks/test/hooks.test.cjs"
+    "check:framework": "prettier --write . && prettier --check . && eslint . && node --test .claude/hooks/test/hooks.test.cjs",
+    "report": "playwright show-report"
+  },
+  "engines": {
+    "node": ">=20.12.0"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
     "@types/node": "^26.2.0",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
     "playwright-bdd": "^9.2.0",
     "prettier": "^3.9.6",
     "prettier-plugin-gherkin": "^4.0.0"

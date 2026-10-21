@@ -14,10 +14,11 @@
 | **N4** | Never hand-edit a generated file — any ❌ path in §1.                                                           | 🔒 hook     | §1  |
 | **N5** | Never call a step passing/working/done without a real run result.                                               | 🧠 you      | §2  |
 | **N6** | Never edit an existing step definition under [steps/](steps/) — only add new ones (`TODO`-stub exception, §4).  | 🔒 hook     | §4  |
+| **N7** | Open every session with the start menu — no other tool call before it.                                          | 🔒 hook     | §9  |
 
 🔒 = a `PreToolUse` hook in [.claude/settings.json](.claude/settings.json) denies violations; its message says why and what to do. 🧠 = rests on you. A denial is the rule working: hand off; never reword or reroute a call past a hook. Hooks catch common cases only — anything they miss is still forbidden. Hooks fail closed: if one crashes or can't start, tell the user (`npm run hooks:test` shows what broke). An approved **ask** prompt is not standing permission.
 
-The §/N numbers are part of the interface: hook deny messages in [.claude/hooks/](.claude/hooks/) (`§1 (N4)`, `§1`, `§2 (N1)`, `§3 (N2)`, `§3.3`, `§4 (N6)`), §8 below, and [README.md](README.md) all cite them. Renumbering this file means updating those in the same change.
+The §/N numbers are part of the interface: hook deny messages in [.claude/hooks/](.claude/hooks/) (`§1 (N4)`, `§1`, `§2 (N1)`, `§3 (N2)`, `§3.3`, `§4 (N6)`, `§9 (N7)`), §8 below, and [README.md](README.md) all cite them. Renumbering this file means updating those in the same change.
 
 ---
 
@@ -31,13 +32,13 @@ Playwright + Gherkin. ESM (`"type": "module"`). Tests run in Chromium only, head
 | [session-state.js](session-state.js), [.mcp.json](.mcp.json) (§7), [.claude/settings.json](.claude/settings.json), `.claude/settings.local.json`, [.claude/hooks/](.claude/hooks/) | The harness — can switch a guardrail off or grant permissions            | ⚠️ only when asked |
 | `.auth/`, `.features-gen/`, `test-results/`, `playwright-report/`, `blob-report/`, `node_modules/`, `.playwright-mcp/`, `package-lock.json`, `.claude/hooks/hook.log*`             | Generated output                                                         | ❌ never (N4)      |
 
-The ❌ list is mirrored in [hook-utils.cjs](.claude/hooks/hook-utils.cjs), the `permissions.deny` list in [.claude/settings.json](.claude/settings.json), [.gitignore](.gitignore) and [.prettierignore](.prettierignore) — keep them in step. Never read ❌ paths either — denied for file tools (`permissions.deny`) and shell reads ([check-shell-reads.cjs](.claude/hooks/check-shell-reads.cjs)).
+The ❌ list is mirrored in [hook-utils.cjs](.claude/hooks/hook-utils.cjs), the `permissions.deny` list in [.claude/settings.json](.claude/settings.json), [.gitignore](.gitignore), [.prettierignore](.prettierignore) and [eslint.config.js](eslint.config.js) — keep them in step; `npm run hooks:test` fails if they drift. Never read ❌ paths either — denied for file tools (`permissions.deny`) and shell reads ([check-shell-reads.cjs](.claude/hooks/check-shell-reads.cjs)).
 
 ---
 
 ## 2. 🚫 STOP — never run the suite
 
-Covers `playwright test`, any `test:*` script, `bddgen`, `npm test`, `node global-setup.js`. `clean`, `report`, `format`, `format:check`, `hooks:test` are fine.
+Covers `playwright test`, any `test:*` script, `bddgen`, `npm test`, `node global-setup.js`. `clean`, `report`, `format`, `format:check`, `lint`, `hooks:test` are fine.
 
 **Hand off** — tell the user (1) what you completed, (2) what's blocked + the exact command, e.g. `npm run test:debug -- <path to .feature>`, (3) what stays unverified (N5). Then wait.
 
@@ -58,7 +59,7 @@ The hook runs these on every `browser_*` call except `browser_close`.
 
 Applies to anything in [steps/](steps/).
 
-**N6:** if an existing step looks broken, report it. **`TODO` stub exception:** a `// TODO`-only body may be filled in once the user agrees, keeping its text and parameters — until then, tell the user scenarios using it aren't checking that line.
+**N6:** if an existing step looks broken, report it. Edit `steps/` with the file tools only — a shell write there asks the user, since the step-edit hook can't inspect it. **`TODO` stub exception:** a `// TODO`-only body may be filled in once the user agrees, keeping its text and parameters — until then, tell the user scenarios using it aren't checking that line.
 
 **Where steps live:** search **all** of [steps/](steps/) for the step text before writing anything — playwright-bdd loads every `steps/**/*.js`, and two files defining the same step text is a duplicate-definition error, not an override. Add a genuinely new step to the existing file that covers the same area; start a new `steps/<area>.steps.js` only for a new area, and match the `createBdd()` setup the other files use.
 
@@ -179,3 +180,18 @@ The §3 gate matcher (`mcp__playwright__browser_.*`) must cover every Playwright
 | Step passes in MCP, fails in the run                   | Verified while logged out, or scenario missing session-injection `Given` | Re-verify per §4; confirm scenario injects session state                                                                                            |
 | Flaky visibility assertion                             | Ambiguous locator matching several nodes                                 | Scope the XPath to a container; use exact `text()='…'` instead of `contains()`; avoid blind `.first()` / `[1]`                                      |
 | Any hook denial or prompt                              | A rule fired — the message names the rule and the fix                    | Follow the message; hand off per §2; an unrequested harness-edit prompt means withdraw the change                                                   |
+
+---
+
+## 9. 🚫 STOP — session start menu
+
+**On the first turn of a session, before anything else,** call `AskUserQuestion` once with a single question, "What would you like to do?", and exactly these options:
+
+1. **Implement TODO steps** — fill in the `// TODO`-only step bodies under [steps/](steps/), following §4.
+2. **Exit** — do nothing; end the turn with a one-line goodbye.
+
+(The tool adds "Other" automatically for a different task, including one already in the user's first message.) Do not run searches, read files, or load tools before the user answers.
+
+[check-session-menu.cjs](.claude/hooks/check-session-menu.cjs) denies every other tool call until that exact question and those two option labels have been asked once in the session. It records the session in a marker under the OS temp dir (`claude-session-menu/<session_id>`), so a resumed or compacted session isn't asked again; markers older than 7 days are pruned. The question text and labels are mirrored in that hook — change both together. A first turn that replies in plain text without any tool call isn't caught; that still rests on you.
+
+**On every prompt, not just the first:** [check-todo-steps.cjs](.claude/hooks/check-todo-steps.cjs), a `UserPromptSubmit` hook, scans [steps/](steps/) for `// TODO`-only bodies. If any exist it clears that marker and lists them in the prompt's context, so the menu above must be shown again before any other tool. With no TODO steps the marker stays and nothing is asked. If the scan can't run, the prompt is blocked.

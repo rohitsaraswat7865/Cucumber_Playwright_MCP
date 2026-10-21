@@ -13,7 +13,28 @@
     ]
   },
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"try{require(require('path').join(process.env.CLAUDE_PROJECT_DIR||'.','.claude','hooks','check-todo-steps.cjs'))}catch(e){process.stdout.write(JSON.stringify({decision:'block',reason:'Blocked by CLAUDE.md \\u00a79: the TODO-step check could not start - tell the user. '+e.message}))}\"",
+            "statusMessage": "Checking steps/ for TODO steps (CLAUDE.md §9)"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"try{require(require('path').join(process.env.CLAUDE_PROJECT_DIR||'.','.claude','hooks','check-session-menu.cjs'))}catch(e){process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'PreToolUse',permissionDecision:'deny',permissionDecisionReason:'Blocked by CLAUDE.md \\u00a79 (N7): the start-menu guard could not start, so the call is blocked - tell the user. '+e.message}}))}\"",
+            "statusMessage": "Checking the session start menu was shown (CLAUDE.md §9, N7)"
+          }
+        ]
+      },
       {
         "matcher": "mcp__playwright__browser_.*",
         "hooks": [

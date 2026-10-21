@@ -117,7 +117,9 @@ export function readSessionState() {
   try {
     state = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf-8'));
   } catch (cause) {
-    throw new Error(`Session state file is not valid JSON: ${SESSION_FILE}\n  - ${cause.message}`);
+    throw new Error(`Session state file is not valid JSON: ${SESSION_FILE}\n  - ${cause.message}`, {
+      cause,
+    });
   }
 
   const errors = validateSessionState(state);

@@ -5,6 +5,7 @@
 'use strict';
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 // Resolved from this file's location (.claude/hooks/), not process.cwd(): hooks
@@ -12,6 +13,11 @@ const path = require('path');
 const PROJECT_DIR = path.resolve(__dirname, '..', '..');
 const LOG_FILE = path.join(__dirname, 'hook.log');
 const LOG_MAX_BYTES = 1024 * 1024;
+
+// One empty "start menu shown" marker per session id (CLAUDE.md §9), written by
+// check-session-menu.cjs and cleared by check-todo-steps.cjs. Outside the
+// project, so it never lands in a generated or tracked path.
+const MENU_MARKER_DIR = path.join(os.tmpdir(), 'claude-session-menu');
 
 // Top-level or nested directories / files marked ❌ generated in CLAUDE.md §1 ->
 // what rewrites them. Keep in step with CLAUDE.md §1, .gitignore and .prettierignore.
@@ -103,7 +109,8 @@ function audit(entry) {
  * the project-relative file, the (truncated, redacted) shell command, or the URL.
  */
 function describeCall(input) {
-  const ti = input && typeof input.tool_input === 'object' && input.tool_input ? input.tool_input : {};
+  const ti =
+    input && typeof input.tool_input === 'object' && input.tool_input ? input.tool_input : {};
   const str = v => (typeof v === 'string' && v !== '' ? v : null);
   const file = str(ti.file_path) || str(ti.path) || str(ti.notebook_path);
   if (file) return `file: ${relToProject(file) ?? file}`;
@@ -111,7 +118,10 @@ function describeCall(input) {
   if (cmd) {
     const redacted = cmd
       .replace(/\s+/g, ' ')
-      .replace(/((?:token|secret|password|passwd|cookie|authorization|api[-_]?key)\S*\s*[=:]\s*)\S+/gi, '$1***')
+      .replace(
+        /((?:token|secret|password|passwd|cookie|authorization|api[-_]?key)\S*\s*[=:]\s*)\S+/gi,
+        '$1***',
+      )
       .replace(/(Bearer\s+)\S+/gi, '$1***');
     return `command: ${redacted.length > 160 ? `${redacted.slice(0, 160)}…` : redacted}`;
   }
@@ -182,9 +192,20 @@ function runHook({ name, rule, main }) {
     )
     .then(() => {
       // main returned without deny/ask: the call is allowed. Log it, but print nothing.
-      if (!responded) audit({ hook: name, tool, rule, decision: 'allow', detail: describeCall(input) });
+      if (!responded)
+        audit({ hook: name, tool, rule, decision: 'allow', detail: describeCall(input) });
     })
     .catch(failClosed);
 }
 
-module.exports = { PROJECT_DIR, GENERATED, PROTECTED, relToProject, classifyPath, audit, runHook };
+module.exports = {
+  PROJECT_DIR,
+  GENERATED,
+  HOOK_LOG,
+  PROTECTED,
+  MENU_MARKER_DIR,
+  relToProject,
+  classifyPath,
+  audit,
+  runHook,
+};

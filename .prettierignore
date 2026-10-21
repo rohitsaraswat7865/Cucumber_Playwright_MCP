@@ -1,9 +1,11 @@
+.env
 node_modules/
 .features-gen/
 test-results/
 playwright-report/
 blob-report/
 .auth/
-.playwright-mcp/
 package-lock.json
+.playwright-mcp/
 .claude/hooks/hook.log*
+.claude/settings.local.json

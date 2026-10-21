@@ -76,10 +76,16 @@
       "rm .claude/hooks/check-session-gate.cjs",
       "sed -i s/x/y/ session-state.js",
       "Set-Content .mcp.json x",
-      "cp /tmp/s.json .claude/settings.local.json"
+      "cp /tmp/s.json .claude/settings.local.json",
+      "echo x > steps/test.steps.js",
+      "sed -i s/a/b/ steps/base.steps.js",
+      "rm steps/old.steps.js",
+      "Set-Content -Path steps/new.steps.js -Value x"
     ],
     "allow": [
       "ls .auth",
+      "cat steps/test.steps.js",
+      "cp steps/test.steps.js backup.js",
       "echo hi > notes.txt",
       "cp package-lock.json backup.json",
       "sed s/a/b/ .features-gen/x.spec.js",
