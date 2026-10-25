@@ -1,5 +1,3 @@
-# mb-autotest-ai
-
 ## ✨ Capabilities
 
 - 🥒 **Gherkin scenarios** — test cases in `Given / When / Then` under [features/](features/), run by the Playwright test runner
