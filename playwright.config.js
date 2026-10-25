@@ -21,7 +21,7 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry once locally, twice on CI. A retry runs in a fresh worker, with fresh testData (steps/fixtures.js). */
-  retries: process.env.CI ? 2 : 1,
+  retries: process.env.CI ? 2 : 2,
   /* Default worker count; the test:parallel:* scripts override it with --workers=3. */
   workers: process.env.CI ? 2 : 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */

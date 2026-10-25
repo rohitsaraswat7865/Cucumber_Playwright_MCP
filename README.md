@@ -46,8 +46,7 @@ npx playwright install     # browser binaries: Chromium runs the tests, Firefox 
 | `npm run clean`                       | 🧹 Clear `.features-gen/`, `.test-data/` and old results and reports (preserving mounted directories; every test script does this first) |
 | `npm run test:parallel:headed`        | 🖼️ Clean, generate, and run with 3 workers, browser visible (`--headed`)                                                                 |
 | `npm run test:parallel:headless`      | 🤖 Clean, generate, and run with 3 workers, no browser UI                                                                                |
-| `npm run test:debug`                  | 🐞 Clean, generate, and run in the Playwright Inspector (headed, one worker)                                                             |
-| `npm run test:debug -- --grep "@tag"` | 🐞 Same, for a single test scenario                                                                                                      |
+| `npm run test:debug -- --grep "@tag"` | 🐞 Same, for a single test scenario (headed, one worker)                                                                                 |
 | `npm run report`                      | 📊 Open the last Playwright HTML report                                                                                                  |
 | `npm run check:framework`             | 🛡️ Format, lint, and self-test the Claude Code hooks (never runs the suite)                                                              |
 
