@@ -7,5 +7,6 @@ blob-report/
 .auth/
 package-lock.json
 .playwright-mcp/
+.test-data/
 .claude/hooks/hook.log*
 .claude/settings.local.json

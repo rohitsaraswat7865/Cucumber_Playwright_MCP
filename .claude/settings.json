@@ -9,7 +9,10 @@
       "Read(**/node_modules/**)",
       "Read(**/.playwright-mcp/**)",
       "Read(package-lock.json)",
-      "Read(.claude/hooks/hook.log*)"
+      "Read(**/.test-data/**)",
+      "Read(.claude/hooks/hook.log*)",
+      "Read(.env)",
+      "Read(**/.env)"
     ]
   },
   "hooks": {

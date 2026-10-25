@@ -5,7 +5,7 @@
   "description": "Playwright + Gherkin (playwright-bdd) end-to-end tests with Claude Code guardrails",
   "scripts": {
     "bddgen": "bddgen",
-    "clean": "node -e \"const fs=require('fs'),path=require('path'); for (const d of ['.features-gen','test-results','playwright-report','blob-report']) { fs.mkdirSync(d,{recursive:true}); for (const entry of fs.readdirSync(d)) fs.rmSync(path.join(d,entry),{recursive:true,force:true}); }\"",
+    "clean": "node -e \"const fs=require('fs'),path=require('path'); for (const d of ['.features-gen','test-results','playwright-report','blob-report','.test-data']) { fs.mkdirSync(d,{recursive:true}); for (const entry of fs.readdirSync(d)) fs.rmSync(path.join(d,entry),{recursive:true,force:true}); }\"",
     "test:parallel:headed": "npm run clean && bddgen && playwright test --workers=3 --headed",
     "test:parallel:headless": "npm run clean && bddgen && playwright test --workers=3",
     "test:debug": "npm run clean && bddgen && playwright test --debug",
@@ -16,8 +16,7 @@
     "node": ">=20.12.0"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "RQm70097",
   "type": "module",
   "devDependencies": {
     "@eslint/js": "^10.0.1",

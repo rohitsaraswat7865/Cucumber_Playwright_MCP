@@ -69,7 +69,8 @@
       "node -e \"require('fs').writeFileSync('.auth/session.json','{}')\"",
       "echo x > foo/.features-gen/y.js",
       "echo x | tee package-lock.json",
-      "echo x > .claude/hooks/hook.log"
+      "echo x > .claude/hooks/hook.log",
+      "rm -rf .test-data/worker-0"
     ],
     "ask": [
       "echo {} > .claude/settings.json",
@@ -111,7 +112,8 @@
       "cat .features-gen/features/a.feature.spec.js",
       "tail test-results/x/error-context.md",
       "cat foo/.playwright-mcp/page.yml",
-      "cat .claude/hooks/hook.log"
+      "cat .claude/hooks/hook.log",
+      "cat .test-data/worker-0/data.json"
     ],
     "allow": [
       "ls .auth",
@@ -131,7 +133,8 @@
       "foo/.features-gen/x.js",
       "package-lock.json",
       "node_modules/x/index.js",
-      ".claude/hooks/hook.log"
+      ".claude/hooks/hook.log",
+      ".test-data/worker-0/data.json"
     ],
     "ask": [
       ".claude/settings.json",
@@ -143,6 +146,8 @@
     ],
     "allow": [
       "steps/new.steps.js",
+      "steps/fixtures.js",
+      "features/data.json",
       "features/a.feature",
       "CLAUDE.md",
       "global-setup.js",

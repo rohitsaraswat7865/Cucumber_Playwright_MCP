@@ -12,6 +12,7 @@ export default [
       'blob-report/',
       '.auth/',
       '.playwright-mcp/',
+      '.test-data/',
     ],
   },
   js.configs.recommended,
@@ -39,5 +40,10 @@ export default [
     // so a step file that doesn't use all three is expected - flag it, don't fail.
     files: ['steps/**/*.js'],
     rules: { 'no-unused-vars': ['warn', { args: 'none' }] },
+  },
+  {
+    // XPath templates match form labels that use a literal non-breaking space ("M:Market&nbsp;*").
+    files: ['steps/**/*.js'],
+    rules: { 'no-irregular-whitespace': ['error', { skipTemplates: true }] },
   },
 ];

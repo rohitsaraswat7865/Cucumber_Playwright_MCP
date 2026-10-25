@@ -1,3 +1,5 @@
+# mb-autotest-ai
+
 ## ✨ Capabilities
 
 - 🥒 **Gherkin scenarios** — test cases in `Given / When / Then` under [features/](features/), run by the Playwright test runner
@@ -12,6 +14,7 @@
 ```
 ├── features/             🥒 Gherkin .feature files (test scenarios)
 ├── steps/                🪜 Step definitions implementing the Gherkin steps
+├── steps/fixtures.js     🧰 Custom fixtures: scenarioCtx (per scenario), testData (per worker)
 ├── playwright.config.js  ⚙️ Playwright + BDD configuration
 ├── global-setup.js       🔐 Logs in once, captures the session before tests run
 ├── session-state.js      📜 Session-file format contract (read / write / validate)
@@ -26,7 +29,7 @@
 └── .vscode/settings.json 🧩 Specwright paths + Prettier format-on-save
 ```
 
-Generated — never hand-edit: `.auth/` (the captured session), `.features-gen/`, `test-results/`, `playwright-report/`, `blob-report/`, `.playwright-mcp/`, `node_modules/`, `package-lock.json` and `.claude/hooks/hook.log`. All but `package-lock.json` are gitignored. Claude Code can't edit or read any of them (see [below](#-working-with-claude-code)).
+Generated — never hand-edit: `.auth/` (the captured session), `.features-gen/`, `test-results/`, `playwright-report/`, `blob-report/`, `.playwright-mcp/`, `node_modules/`, `package-lock.json`, `.test-data/` (each worker's `testData`) and `.claude/hooks/hook.log`. All but `package-lock.json` are gitignored. Claude Code can't edit or read any of them (see [below](#-working-with-claude-code)).
 
 ## 🚀 Getting started
 
@@ -39,23 +42,23 @@ npx playwright install     # browser binaries: Chromium runs the tests, Firefox 
 
 ## ▶️ Running tests
 
-| Command                               | Description                                                                                                               |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `npm run bddgen`                      | ⚙️ Generate BDD spec files from `.feature` files into `.features-gen/`                                                    |
-| `npm run clean`                       | 🧹 Clear `.features-gen/` and old results and reports (preserving mounted directories; every test script does this first) |
-| `npm run test:parallel:headed`        | 🖼️ Clean, generate, and run with 3 workers, browser visible (`--headed`)                                                  |
-| `npm run test:parallel:headless`      | 🤖 Clean, generate, and run with 3 workers, no browser UI                                                                 |
-| `npm run test:debug`                  | 🐞 Clean, generate, and run in the Playwright Inspector (headed, one worker)                                              |
-| `npm run test:debug -- --grep "@tag"` | 🐞 Same, for a single test scenario                                                                                       |
-| `npm run report`                      | 📊 Open the last Playwright HTML report                                                                                   |
-| `npm run check:framework`             | 🛡️ Format, lint, and self-test the Claude Code hooks (never runs the suite)                                               |
+| Command                               | Description                                                                                                                              |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run bddgen`                      | ⚙️ Generate BDD spec files from `.feature` files into `.features-gen/`                                                                   |
+| `npm run clean`                       | 🧹 Clear `.features-gen/`, `.test-data/` and old results and reports (preserving mounted directories; every test script does this first) |
+| `npm run test:parallel:headed`        | 🖼️ Clean, generate, and run with 3 workers, browser visible (`--headed`)                                                                 |
+| `npm run test:parallel:headless`      | 🤖 Clean, generate, and run with 3 workers, no browser UI                                                                                |
+| `npm run test:debug`                  | 🐞 Clean, generate, and run in the Playwright Inspector (headed, one worker)                                                             |
+| `npm run test:debug -- --grep "@tag"` | 🐞 Same, for a single test scenario                                                                                                      |
+| `npm run report`                      | 📊 Open the last Playwright HTML report                                                                                                  |
+| `npm run check:framework`             | 🛡️ Format, lint, and self-test the Claude Code hooks (never runs the suite)                                                              |
 
 Every test run starts with global setup: Firefox (headless by default; set `LOGIN_HEADLESS=false` in `.env` to see it) logs in and writes a fresh `.auth/` (see [Session state](#-session-state)).
 
 ## 🖊️ Writing a new scenario
 
 1. Add a `Scenario` to a `.feature` file in [features/](features/). To run it logged in, start with `Given I inject session state from file`, as the `Background`. Use one `Feature` per file, named after its test ID, with a matching tag on the scenario.
-2. Add any missing steps in [steps/](steps/) using `createBdd()` from `playwright-bdd` — or ask Claude Code to draft them ([below](#-working-with-claude-code))
+2. Add any missing steps in [steps/](steps/) using `createBdd(test)` with `test` from [steps/fixtures.js](steps/fixtures.js), which gives steps the `scenarioCtx` and `testData` fixtures ([CLAUDE.md](CLAUDE.md) §6) — or ask Claude Code to draft them ([below](#-working-with-claude-code))
 3. Run `npm run test:parallel:headed` (or `test:parallel:headless`); `bddgen` generates the Playwright spec files from your Gherkin first
 
 ## 🔐 Session state

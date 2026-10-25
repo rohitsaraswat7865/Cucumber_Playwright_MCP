@@ -32,6 +32,8 @@ const GENERATED = {
   '.playwright-mcp': 'The Playwright MCP server writes it',
   node_modules: 'npm installs it - change package.json instead',
   'package-lock.json': 'npm rewrites it - change package.json and run `npm install` instead',
+  '.test-data':
+    'Each test worker rewrites its own folder (steps/fixtures.js) - change the fixture or the steps instead',
 };
 const HOOK_LOG = '.claude/hooks/hook.log';
 
