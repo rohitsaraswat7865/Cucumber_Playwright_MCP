@@ -111,6 +111,7 @@ N3 (confirm every locator on the live page) and N5 (no "it works" without a real
 Hooks fail closed: if one breaks, the call is blocked rather than let through. They catch the ordinary ways of running commands and reading or writing files, not deliberate tricks, and they only run inside Claude Code, so your own terminal is never blocked. Every decision (allow, prompt, deny) is logged to `.claude/hooks/hook.log` (gitignored, with no secrets).
 
 `npm run check:framework` formats the project, runs ESLint, and runs the hooks' self-tests. The hook tests also check that [.claude/settings.json](.claude/settings.json) wires every hook to its tools, that every copy of the generated-path list (CLAUDE.md §1, `.gitignore`, `.prettierignore`, `permissions.deny`, `eslint.config.js`) matches, that the session gate covers every Playwright MCP server in [.mcp.json](.mcp.json), and that `--caps=storage` stays off. Run it after changing a hook, `.claude/settings.json` or `.mcp.json`.
+![alt text](image.png)
 
 ## 🛠️ Recommended VS Code extensions
 
