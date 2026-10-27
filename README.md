@@ -14,13 +14,14 @@
 ├── steps/                🪜 Step definitions implementing the Gherkin steps
 ├── steps/fixtures.js     🧰 Custom fixtures: scenarioCtx (per scenario), testData (per worker)
 ├── playwright.config.js  ⚙️ Playwright + BDD configuration
+├── test-debug.js         🐞 Exact-tag debug test runner
 ├── global-setup.js       🔐 Logs in once, captures the session before tests run
 ├── session-state.js      📜 Session-file format contract (read / write / validate)
 ├── .mcp.json             🤖 Playwright MCP server for Claude's browser
 ├── CLAUDE.md             🤖 Instructions Claude Code reads every session
 ├── .claude/settings.json 🛡️ The harness: hooks that enforce CLAUDE.md's key rules
 ├── .claude/hooks/        🛡️ The hook scripts, and their self-tests in test/
-├── docs/                 📖 workflow.png visual guide, and workflow.html, its source
+├── docs/                 📖 workflow.png visual guide
 ├── eslint.config.js      🔍 ESLint flat config (npm run check:framework)
 ├── .env                  🔧 Local settings such as LOGIN_HEADLESS (gitignored)
 ├── .prettierrc.json      🎨 Prettier config, including the Gherkin plugin
@@ -40,15 +41,15 @@ npx playwright install     # browser binaries: Chromium runs the tests, Firefox 
 
 ## ▶️ Running tests
 
-| Command                               | Description                                                                                                                              |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run bddgen`                      | ⚙️ Generate BDD spec files from `.feature` files into `.features-gen/`                                                                   |
-| `npm run clean`                       | 🧹 Clear `.features-gen/`, `.test-data/` and old results and reports (preserving mounted directories; every test script does this first) |
-| `npm run test:parallel:headed`        | 🖼️ Clean, generate, and run with 3 workers, browser visible (`--headed`)                                                                 |
-| `npm run test:parallel:headless`      | 🤖 Clean, generate, and run with 3 workers, no browser UI                                                                                |
-| `npm run test:debug -- --grep "@tag"` | 🐞 Same, for a single test scenario (headed, one worker)                                                                                 |
-| `npm run report`                      | 📊 Open the last Playwright HTML report                                                                                                  |
-| `npm run check:framework`             | 🛡️ Format, lint, and self-test the Claude Code hooks (never runs the suite)                                                              |
+| Command                          | Description                                                                                                                              |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run bddgen`                 | ⚙️ Generate BDD spec files from `.feature` files into `.features-gen/`                                                                   |
+| `npm run clean`                  | 🧹 Clear `.features-gen/`, `.test-data/` and old results and reports (preserving mounted directories; every test script does this first) |
+| `npm run test:parallel:headed`   | 🖼️ Clean, generate, and run with x workers, browser visible (`--headed`)                                                                 |
+| `npm run test:parallel:headless` | 🤖 Clean, generate, and run with x workers, no browser UI                                                                                |
+| `npm run test:debug -- '@TAG'`   | 🐞 Debug scenarios matching one exact tag (headed, one worker)                                                                           |
+| `npm run report`                 | 📊 Open the last Playwright HTML report                                                                                                  |
+| `npm run check:framework`        | 🛡️ Format, lint, and self-test the Claude Code hooks (never runs the suite)                                                              |
 
 Every test run starts with global setup: Firefox (headless by default; set `LOGIN_HEADLESS=false` in `.env` to see it) logs in and writes a fresh `.auth/` (see [Session state](#-session-state)).
 
@@ -56,7 +57,16 @@ Every test run starts with global setup: Firefox (headless by default; set `LOGI
 
 1. Add a `Scenario` to a `.feature` file in [features/](features/). To run it logged in, start with `Given I inject session state from file`, as the `Background`. Use one `Feature` per file, named after its test ID, with a matching tag on the scenario.
 2. Add any missing steps in [steps/](steps/) using `createBdd(test)` with `test` from [steps/fixtures.js](steps/fixtures.js), which gives steps the `scenarioCtx` and `testData` fixtures ([CLAUDE.md](CLAUDE.md) §6) — or ask Claude Code to draft them ([below](#-working-with-claude-code))
-3. Run `npm run test:parallel:headed` (or `test:parallel:headless`); `bddgen` generates the Playwright spec files from your Gherkin first
+3. Run `npm run test:parallel:headed` (or `test:parallel:headless`); `bddgen` generates the Playwright spec files from your Gherkin first.
+4. To debug scenarios by exact tag, pass one or more tags to `test:debug`:
+
+   ```powershell
+   # One tag
+   npm run test:debug -- '@TAG1'
+
+   # Multiple tags: exact OR match
+   npm run test:debug -- '@TAG1' '@TAG2'
+   ```
 
 ## 🔐 Session state
 
@@ -101,8 +111,6 @@ N3 (confirm every locator on the live page) and N5 (no "it works" without a real
 Hooks fail closed: if one breaks, the call is blocked rather than let through. They catch the ordinary ways of running commands and reading or writing files, not deliberate tricks, and they only run inside Claude Code, so your own terminal is never blocked. Every decision (allow, prompt, deny) is logged to `.claude/hooks/hook.log` (gitignored, with no secrets).
 
 `npm run check:framework` formats the project, runs ESLint, and runs the hooks' self-tests. The hook tests also check that [.claude/settings.json](.claude/settings.json) wires every hook to its tools, that every copy of the generated-path list (CLAUDE.md §1, `.gitignore`, `.prettierignore`, `permissions.deny`, `eslint.config.js`) matches, that the session gate covers every Playwright MCP server in [.mcp.json](.mcp.json), and that `--caps=storage` stays off. Run it after changing a hook, `.claude/settings.json` or `.mcp.json`.
-
-![alt text](image.png)
 
 ## 🛠️ Recommended VS Code extensions
 
