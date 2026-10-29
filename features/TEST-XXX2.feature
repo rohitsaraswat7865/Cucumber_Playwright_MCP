@@ -1,3 +1,4 @@
+@regression
 Feature: TEST-XXX2
 
   Background:
@@ -7,10 +8,10 @@ Feature: TEST-XXX2
   @TEST-XXX2
   Scenario: Test Automation - Project Data002
     When I click on "PIM" in left navigation panel
-    Then Top bar header contains text "PIM"
+    Then Top bar header contains text
     And I type "Buzz" in Search
     And I click on main menu "Buzz" listed in left navigation panel
-    Then Top bar header contains text "Buzz"
+    Then Top bar header contains text
     When I click on buttom with text "Most Liked Posts"
     Then In buzz post text area with text "What's on your mind?" is clickable
     #Then I get a green popup in left down corner of page with message - "Successfully Saved"

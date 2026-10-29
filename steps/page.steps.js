@@ -1,7 +1,8 @@
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
+import { test } from './fixtures.js';
 
-const { Given, When, Then } = createBdd();
+const { Given, When, Then } = createBdd(test);
 
 function xpathLiteral(value) {
   if (!value.includes("'")) return `'${value}'`;
@@ -10,20 +11,25 @@ function xpathLiteral(value) {
 }
 
 const USER_MENU_LINKS = `//header//ul[contains(@class,'oxd-dropdown-menu')]//a[contains(@class,'oxd-userdropdown-link')]`;
+const MAIN_MENU_ITEM = `//nav[@aria-label='Sidepanel']//ul[contains(@class,'oxd-main-menu')]//a[contains(@class,'oxd-main-menu-item')]`;
 const DIALOG = `//div[contains(@class,'oxd-dialog-container-default--inner')]`;
 
-When('I click on {string} in left navigation panel', async ({ page }, str) => {
-  await page
-    .locator(
-      `xpath=//nav[@aria-label='Sidepanel']//a[contains(@class,'oxd-main-menu-item')][.//span[text()='${str}']]`,
-    )
-    .click();
-});
+When(
+  'I click on {string} in left navigation panel',
+  async ({ page, scenarioCtx, testData }, str) => {
+    await page.locator(`xpath=${MAIN_MENU_ITEM}[.//span[text()=${xpathLiteral(str)}]]`).click();
+    scenarioCtx.menuName = str;
+    testData.set('menu.name', str);
+  },
+);
 
-Then('Top bar header contains text {string}', async ({ page }, str) => {
+Then('Top bar header contains text', async ({ page, scenarioCtx, testData }) => {
+  const fromCtx = scenarioCtx.menuName;
+  const fromData = testData.get('menu.name');
+  expect(fromCtx).toBe(fromData);
   await expect(
     page.locator(
-      `xpath=//span[contains(@class,'oxd-topbar-header-breadcrumb')]/h6[contains(.,'${str}')]`,
+      `xpath=//header//span[contains(@class,'oxd-topbar-header-breadcrumb')]/h6[contains(@class,'oxd-topbar-header-breadcrumb-module')][normalize-space(.)=${xpathLiteral(fromCtx)}]`,
     ),
   ).toBeVisible();
 });
@@ -121,13 +127,14 @@ Then(
   },
 );
 
-When('I click on main menu {string} listed in left navigation panel', async ({ page }, str) => {
-  await page
-    .locator(
-      `xpath=//nav[@aria-label='Sidepanel']//ul[contains(@class,'oxd-main-menu')]//a[contains(@class,'oxd-main-menu-item')][.//span[text()=${xpathLiteral(str)}]]`,
-    )
-    .click();
-});
+When(
+  'I click on main menu {string} listed in left navigation panel',
+  async ({ page, scenarioCtx, testData }, str) => {
+    await page.locator(`xpath=${MAIN_MENU_ITEM}[.//span[text()=${xpathLiteral(str)}]]`).click();
+    scenarioCtx.menuName = str;
+    testData.set('menu.name', str);
+  },
+);
 
 Then(
   'At least {int} people have upcoming anniversaries in current month',

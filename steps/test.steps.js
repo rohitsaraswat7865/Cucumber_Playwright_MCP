@@ -4,12 +4,6 @@ import { localStorageByOrigin, readSessionState } from '../session-state.js';
 
 const { Given, When, Then } = createBdd();
 
-function xpathLiteral(value) {
-  if (!value.includes("'")) return `'${value}'`;
-  const parts = value.split("'").map(part => `'${part}'`);
-  return `concat(${parts.join(`, "'", `)})`;
-}
-
 Given('I inject session state from file', async ({ context, page }) => {
   // Throws if the file is missing or not in native storageState format, rather
   // than quietly injecting nothing and letting the scenario run logged out.

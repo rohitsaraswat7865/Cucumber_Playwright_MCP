@@ -1,3 +1,4 @@
+@regression
 Feature: TEST-XXX1
 
   Background:
@@ -7,7 +8,7 @@ Feature: TEST-XXX1
   @TEST-XXX1
   Scenario: Test Automation - Project Data001
     When I click on "PIM" in left navigation panel
-    Then Top bar header contains text "PIM"
+    Then Top bar header contains text
     And Left navigation panel contains following items
       | NAME        |
       | Leave       |
@@ -25,7 +26,7 @@ Feature: TEST-XXX1
     When I delete text in placeholder search in Left navigation panel
     And I type "Buzz" in Search
     And I click on main menu "Buzz" listed in left navigation panel
-    Then Top bar header contains text "Buzz"
+    Then Top bar header contains text
     When I click on buttom with text "Most Liked Posts"
     Then In buzz post text area with text "What's on your mind?" is clickable
     When I click on text "What's on your mind?"
